@@ -28,8 +28,6 @@ import varmite.verity.entity.llm.store.chat.MinecraftChatMemoryStore;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.event.WorldSpawnData;
 import varmite.verity.triggers.ModTriggers;
-import varmite.verity.types.AiModelPreset;
-import varmite.verity.types.AiProvider;
 
 public class AiAPI {
    private static String getSystemPrompt(long currentDay, float currentKarma, boolean demonLoose) {
@@ -110,15 +108,10 @@ public class AiAPI {
 
    public static String ask(VerityEntity verity, ServerPlayer player, String prompt, long currentDay, float currentKarma, boolean demonLoose) {
       try {
-         AiProvider provider = VerityConfig.AI_PROVIDER.get();
-         String modelName = AiModelPreset.resolve(
-            provider, VerityConfig.AI_MODEL_PRESET.get(), VerityConfig.USE_CUSTOM_AI_MODEL.get(), VerityConfig.AI_MODEL.get()
-         );
          ChatModel model = new LLMBuilder()
-            .setProvider(provider)
-            .setModel(modelName)
+            .setModel(orDefault(VerityConfig.AI_MODEL.get(), VerityConfig.DEFAULT_AI_MODEL))
             .setApiKey(VerityConfig.API_KEY.get())
-            .setEndpoint(Optional.ofNullable(VerityConfig.AI_ENDPOINT.get()).filter(s -> !s.isEmpty()).orElseGet(provider::getDefaultUrl))
+            .setEndpoint(orDefault(VerityConfig.AI_ENDPOINT.get(), VerityConfig.DEFAULT_AI_ENDPOINT))
             .setThinking(VerityConfig.AI_THINK.get())
             .build();
          Tools tools = new Tools();
@@ -214,6 +207,10 @@ public class AiAPI {
 
          return unreachable ? "ERROR: Couldn't connect to AI provider." : "ERROR: " + e.getMessage();
       }
+   }
+
+   private static String orDefault(String configured, String fallback) {
+      return configured == null || configured.isBlank() ? fallback : configured.trim();
    }
 
    private static boolean isCausedBy(Throwable throwable, Class<? extends Throwable> type) {

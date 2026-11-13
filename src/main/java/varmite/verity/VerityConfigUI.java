@@ -3,19 +3,13 @@ package varmite.verity;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
-import dev.isxander.yacl3.api.OptionEventListener;
-import dev.isxander.yacl3.api.StateManager;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
-import dev.isxander.yacl3.api.ConfigCategory.Builder;
-import dev.isxander.yacl3.api.OptionEventListener.Event;
 import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
-import dev.isxander.yacl3.gui.YACLScreen;
 import java.util.Locale;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -29,8 +23,6 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import varmite.verity.client.VerityPreviewTexture;
 import varmite.verity.event.ModBusClientSetup;
-import varmite.verity.types.AiModelPreset;
-import varmite.verity.types.AiProvider;
 import varmite.verity.types.HostileEvent;
 import varmite.verity.types.STTProvider;
 import varmite.verity.types.TTSLanguage;
@@ -61,102 +53,6 @@ public class VerityConfigUI {
    }
 
    public static Screen createYACLScreen(Screen previousScreen) {
-      return createYACLScreen(previousScreen, false);
-   }
-
-   private static <T> OptionEventListener<T> refreshAiSettings(Screen previousScreen) {
-      return (option, event) -> {
-         if (event == Event.STATE_CHANGE) {
-            Minecraft minecraft = Minecraft.getInstance();
-            minecraft.execute(() -> {
-               if (minecraft.screen instanceof YACLScreen screen && screen.pendingChanges()) {
-                  screen.finishOrSave();
-               }
-
-               minecraft.setScreen(createYACLScreen(previousScreen, true));
-            });
-         }
-      };
-   }
-
-   private static ConfigCategory createAiCategory(Screen previousScreen) {
-      AiProvider provider = VerityConfig.AI_PROVIDER.get();
-      boolean customModel = provider.requiresCustomModel() || VerityConfig.USE_CUSTOM_AI_MODEL.get();
-      Builder category = ConfigCategory.createBuilder()
-         .name(Component.literal("AI Settings"))
-         .option(
-            Option.<AiProvider>createBuilder()
-               .name(Component.literal("AI Provider"))
-               .description(OptionDescription.of(Component.literal("The provider used to power the AI.")))
-               .stateManager(StateManager.createInstant(AiProvider.OPENAI, VerityConfig.AI_PROVIDER, VerityConfig.AI_PROVIDER::set))
-               .controller(opt -> EnumControllerBuilder.create(opt).enumClass(AiProvider.class))
-               .addListener(refreshAiSettings(previousScreen))
-               .build()
-         )
-         .option(
-            Option.<String>createBuilder()
-               .name(Component.literal("API Key"))
-               .description(OptionDescription.of(Component.literal("API Key of the provider.\nOnly needed if the provider requests one.")))
-               .binding("", VerityConfig.API_KEY, VerityConfig.API_KEY::set)
-               .controller(StringControllerBuilder::create)
-               .build()
-         );
-      if (!provider.requiresCustomModel()) {
-         category.option(
-            Option.<Boolean>createBuilder()
-               .name(Component.literal("Use Custom Model"))
-               .description(OptionDescription.of(Component.literal("Enter a model ID instead of using the Smart or Fast preset.")))
-               .stateManager(StateManager.createInstant(false, VerityConfig.USE_CUSTOM_AI_MODEL, VerityConfig.USE_CUSTOM_AI_MODEL::set))
-               .controller(TickBoxControllerBuilder::create)
-               .addListener(refreshAiSettings(previousScreen))
-               .build()
-         );
-      }
-
-      if (customModel) {
-         category.option(
-            Option.<String>createBuilder()
-               .name(Component.literal(provider.requiresCustomModel() ? "Ollama Model" : "Custom AI Model"))
-               .description(OptionDescription.of(Component.literal("Exact model ID to send to " + provider + ".")))
-               .binding("", VerityConfig.AI_MODEL, VerityConfig.AI_MODEL::set)
-               .controller(StringControllerBuilder::create)
-               .build()
-         );
-      } else {
-         category.option(
-            Option.<AiModelPreset>createBuilder()
-               .name(Component.literal("AI Model Preset"))
-               .description(
-                  preset -> OptionDescription.of(
-                     Component.literal(
-                        (preset == AiModelPreset.SMART ? "Higher-quality responses at a low price." : "Faster responses at the lowest practical price.")
-                           + "\nModel: "
-                           + preset.getModel(provider)
-                     )
-                  )
-               )
-               .binding(AiModelPreset.SMART, VerityConfig.AI_MODEL_PRESET, VerityConfig.AI_MODEL_PRESET::set)
-               .controller(
-                  opt -> EnumControllerBuilder.create(opt)
-                     .enumClass(AiModelPreset.class)
-                     .valueFormatter(preset -> Component.literal(preset == AiModelPreset.SMART ? "Smart" : "Fast"))
-               )
-               .build()
-         );
-      }
-
-      return category.option(
-            Option.<Boolean>createBuilder()
-               .name(Component.literal("Thinking Mode"))
-               .description(OptionDescription.of(Component.literal("(On supported models)\nMakes the AI think longer before answering")))
-               .binding(true, VerityConfig.AI_THINK, VerityConfig.AI_THINK::set)
-               .controller(TickBoxControllerBuilder::create)
-               .build()
-         )
-         .build();
-   }
-
-   private static Screen createYACLScreen(Screen previousScreen, boolean focusAiSettings) {
       return YetAnotherConfigLib.createBuilder()
          .title(Component.literal("Verity Configuration"))
          .category(
@@ -222,7 +118,7 @@ public class VerityConfigUI {
                )
                .build()
          )
-         .category(createAiCategory(previousScreen))
+         .category(createAiCategory())
          .category(
             ConfigCategory.createBuilder()
                .name(Component.literal("Voice Settings"))
@@ -352,14 +248,6 @@ public class VerityConfigUI {
                )
                .option(
                   Option.<String>createBuilder()
-                     .name(Component.literal("AI URL"))
-                     .description(OptionDescription.of(Component.literal("Custom URL for dedicated AI servers")))
-                     .binding("", VerityConfig.AI_ENDPOINT, VerityConfig.AI_ENDPOINT::set)
-                     .controller(StringControllerBuilder::create)
-                     .build()
-               )
-               .option(
-                  Option.<String>createBuilder()
                      .name(Component.literal("Text To Speech URL"))
                      .description(OptionDescription.of(Component.literal("Custom URL for dedicated TTS servers.")))
                      .binding("", VerityConfig.TTS_ENDPOINT, VerityConfig.TTS_ENDPOINT::set)
@@ -384,12 +272,49 @@ public class VerityConfigUI {
                )
                .build()
          )
-         .screenInit(screen -> {
-            if (focusAiSettings) {
-               screen.tabNavigationBar.selectTab(1, false);
-            }
-         })
          .build()
          .generateScreen(previousScreen);
+   }
+
+   private static ConfigCategory createAiCategory() {
+      return ConfigCategory.createBuilder()
+         .name(Component.literal("AI Settings"))
+         .option(
+            Option.<String>createBuilder()
+               .name(Component.literal("Endpoint URL"))
+               .description(
+                  OptionDescription.of(
+                     Component.literal("Base URL of any OpenAI-compatible chat API, including /v1.\nOllama: " + VerityConfig.DEFAULT_AI_ENDPOINT)
+                  )
+               )
+               .binding(VerityConfig.DEFAULT_AI_ENDPOINT, VerityConfig.AI_ENDPOINT, VerityConfig.AI_ENDPOINT::set)
+               .controller(StringControllerBuilder::create)
+               .build()
+         )
+         .option(
+            Option.<String>createBuilder()
+               .name(Component.literal("API Key"))
+               .description(OptionDescription.of(Component.literal("API key sent to the endpoint.\nOllama ignores it.")))
+               .binding(VerityConfig.DEFAULT_API_KEY, VerityConfig.API_KEY, VerityConfig.API_KEY::set)
+               .controller(StringControllerBuilder::create)
+               .build()
+         )
+         .option(
+            Option.<String>createBuilder()
+               .name(Component.literal("Model"))
+               .description(OptionDescription.of(Component.literal("Exact model ID to request from the endpoint.")))
+               .binding(VerityConfig.DEFAULT_AI_MODEL, VerityConfig.AI_MODEL, VerityConfig.AI_MODEL::set)
+               .controller(StringControllerBuilder::create)
+               .build()
+         )
+         .option(
+            Option.<Boolean>createBuilder()
+               .name(Component.literal("Thinking Mode"))
+               .description(OptionDescription.of(Component.literal("(On supported models)\nMakes the AI think longer before answering")))
+               .binding(false, VerityConfig.AI_THINK, VerityConfig.AI_THINK::set)
+               .controller(TickBoxControllerBuilder::create)
+               .build()
+         )
+         .build();
    }
 }
