@@ -80,3 +80,30 @@
 - Drop the unused Gemini/Mistral libraries (2026-11-13).
 
 **Open questions for the owner**
+
+## Stage 1: NeoForge 1.21.1 (Java 21)
+
+### 2026-11-13: port compiles and runs in dev
+
+**Done**
+- Tagged `stage0-final` (end of the Forge 1.20.1 work, `aiThink` on by default).
+- Workspace: NeoForge 21.1.266, ModDevGradle 2.0.148, Gradle 9.2.1, Parchment 2024.11.17, GeckoLib 4.9.3 (GeckoLib maven), YACL 3.8.2+1.21.1-neoforge (Modrinth maven; not on isxander's maven).
+- Packets are `CustomPacketPayload` + `StreamCodec` (`verity:play_tts`, `verity:karma_sync`).
+- Triggers use the codec API and a `DeferredRegister`; same ids. Advancement icons use `"id"`.
+- Karma capability is a data attachment (`verity:properties`, copied on death). Nothing reads it, same as the original.
+- Item NBT (`VerityVariant`, `VerityName`, `FlashlightOn`, Verity's saved entity data) lives in the custom data component, through `StackData`.
+- Discs are data-driven jukebox songs (`data/verity/jukebox_song`). Their tag moved to `c:music_discs` because `minecraft:music_discs` no longer exists.
+- Data folders renamed (`structure`, `advancement`, `tags/item`); `pack_format` 34; mixin config has no refmap.
+- `ModEvents` is no longer registered a second time by hand, and `VerityConfigUI` no longer adds mod-bus listeners to the game bus (NeoForge rejects both).
+
+**Verified (dev runs, no player)**
+- `build` produces the jar with 18 jar-in-jar libraries.
+- `runServer` and `runClient` start with no errors; the STT engine initializes on the client.
+- Over local RCON on the dev server: box and Verity summon and tick, all three structures locate, Verity's AI reply arrives from Ollama in about 3 s, and a tool call (karma) ran.
+
+**Not verified**
+- Anything with a player: chat, voice, mic, config screen, HUD, item rendering, discs, flashlight, hostile event.
+- The built jar on a standalone NeoForge server. A server is installed in the scratchpad and the test was about to run when work stopped.
+
+**Notes**
+- `scripts` used for testing set `run/server.properties` to `server-ip=127.0.0.1`, RCON on 25598 with a local password, port 25599. Clear `server-ip` and `enable-rcon` before friends connect to the dev server.
