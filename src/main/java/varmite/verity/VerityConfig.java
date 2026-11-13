@@ -65,7 +65,7 @@ public class VerityConfig {
          .define("aiEndpoint", DEFAULT_AI_ENDPOINT);
       API_KEY = builder.comment("API key sent to the AI endpoint. Ollama ignores it.").define("apiKey", DEFAULT_API_KEY);
       AI_MODEL = builder.comment("Model ID to request from the AI endpoint.").define("aiModel", DEFAULT_AI_MODEL);
-      AI_THINK = builder.comment("Thinking for AI (on models that support it)").define("aiThink", false);
+      AI_THINK = builder.comment("Thinking for AI (on models that support it)").define("aiThink", true);
       builder.pop();
       builder.push("VoiceSettings");
       USE_TTS = builder.comment("Use the text to speech at all").define("useTTS", true);

@@ -329,7 +329,7 @@ public class VerityConfigUI {
             Option.<Boolean>createBuilder()
                .name(Component.literal("Thinking Mode"))
                .description(OptionDescription.of(Component.literal("(On supported models)\nMakes the AI think longer before answering")))
-               .binding(false, VerityConfig.AI_THINK, VerityConfig.AI_THINK::set)
+               .binding(true, VerityConfig.AI_THINK, VerityConfig.AI_THINK::set)
                .controller(TickBoxControllerBuilder::create)
                .build()
          )

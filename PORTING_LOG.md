@@ -76,6 +76,7 @@
 - The hostile event happens once per world; the countdown does not start over.
 - `hostileEvent` default stays `MESSAGE`, with `WITHER` available (2026-11-13).
 - Do not override Ollama's context window (2026-11-13).
+- `aiThink` defaults to true (2026-11-13), overriding CLAUDE.md, because qwen3.5:9b skips tool calls with thinking off.
+- Drop the unused Gemini/Mistral libraries (2026-11-13).
 
 **Open questions for the owner**
-- Flip the `aiThink` default to true, given the tool-call finding?
