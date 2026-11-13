@@ -26,8 +26,29 @@
 - Dev config (`run/config/verity-common.toml`, not in git) is set to Ollama, `qwen3.5:9b`, `aiThink = false`.
 
 **Not done yet**
-- In-game checks need the owner: world load, Verity spawn, chat against Ollama, TTS, mic, config screen. `baseline-1.20.1` is not tagged until those pass.
-- No cuts applied.
+- In-game checks need the owner. `baseline-1.20.1` is not tagged: nobody has played the untouched build (commit `aaaf633`).
+
+### 2026-11-12 (trim): cuts, parked demon, endpoint override, fish.audio
+
+**Done** (each compiles; `runServer` and `runClient` smoke tests pass on the result)
+- Cut: intro video (screen, 248 frames, audio, `playVideo`), villager and wildlife kills on load (`killEntities`, `killWildlife`, `killVillagers`), the half-way mass kill and `doMobSpawning` change, the `doDaylightCycle` freeze, the forced midnight, forced brightness 0.
+- Default off: `trueDarkness`; overworld fog behind a new `verityFog` option.
+- Demon parked in `parked/demon` (code and assets, not compiled, not in the jar). `canCrash` went with it. `parked/demon/README.md` lists what to restore.
+- New `hostileEvent` setting (`OFF`, `MESSAGE`, `WITHER`, `DEMON`), default `MESSAGE`. It runs once per world; when it ends, `hostileResolved` is saved and Verity is back to normal for good. `OFF` also disables the day-based personality shift. `DEMON` behaves like `WITHER`.
+- `VerityEntity.hasTriggeredDay2` is still set at half of `dayCount` but no longer does anything.
+- AI: `aiProvider`, `aiModelPreset`, `useCustomAiModel` removed. `aiEndpoint` / `apiKey` / `aiModel` are always used (defaults `http://127.0.0.1:11434/v1`, `ollama`, `qwen3.5:9b`); `aiThink` defaults to false. Groq and OpenRouter keep their gpt-oss reasoning parameters, picked by endpoint host.
+- When the endpoint answers Ollama's `/api/version`, the request goes through Ollama's native API on the same server. Reason: the OpenAI-compatible route cannot set the context window, and the original relied on `num_ctx` 16000 for the prompt plus about 40 tools.
+- fish.audio: new `FISH_AUDIO` voice provider with `fishApiKey` and `fishVoiceId`. `POST https://api.fish.audio/v1/tts`, bearer auth, JSON `text` / `reference_id` / `format: pcm` / `sample_rate: 44100`, played as 16-bit mono little-endian (byte order taken from JE Extra; fish.audio's docs do not state it).
+- Jar size: 258 MB to 179 MB.
+
+**Not verified**
+- Anything in-game: chat, tool calls, voice, mic, config screen, the hostile event in any mode.
+- fish.audio against the live API (no key).
+
+**Stubbed / TODO**
+- `HostileEvent.DEMON` is a stand-in until the demon is restored and ported.
+- Native Gemini and Mistral chat paths are gone, so `langchain4j-google-genai`, `langchain4j-mistral-ai`, `genai-bundle` and the Google/gRPC/protobuf/OpenCensus jars are bundled but unused. Removing them is the owner's call.
+- `baseline-1.20.1-trimmed` is not tagged until the owner's playtest passes.
 
 **Decisions the owner made (2026-11-12)**
 - `verity-6.0.0-beta.9.jar` is the intended build.
@@ -37,8 +58,10 @@
 - Keep but default off: `trueDarkness`, overworld fog override.
 - Keep: structures, chest trap, flashlight light blocks, flashlight given on login/respawn, `give_item`.
 - Hostile day event becomes a config toggle: off, placeholder message, or spawn a Wither. Defeating it brings Verity back to normal; the personality shift stays until that reset. A "demon" choice exists but behaves like the Wither one for now.
+- The demon is wanted eventually: park the code instead of deleting it.
+- "Off" also switches off the day-based personality shift.
+- The hostile event happens once per world; the countdown does not start over.
 
 **Open questions for the owner**
-- Delete the demon code and assets (as CLAUDE.md says) or keep them dormant behind the toggle?
-- Does "off" also switch off the day-based personality shift?
-- After the Wither is defeated, does the day progression start over or stay normal for good?
+- Default for `hostileEvent`: `MESSAGE` (current, harmless) or `WITHER` (destroys blocks near the player)?
+- Drop the now-unused Gemini/Mistral libraries from the jar?
