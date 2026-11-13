@@ -8,6 +8,7 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.Registry;
 import net.minecraft.core.Holder.Reference;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -20,7 +21,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.Structure;
-import net.minecraftforge.registries.ForgeRegistries;
 import varmite.verity.entity.VerityState;
 import varmite.verity.event.WorldSpawnData;
 
@@ -156,15 +156,15 @@ public class LLMUtility {
       Item foundItem = null;
       if (item_id.contains(":")) {
          ResourceLocation loc = ResourceLocation.tryParse(item_id);
-         if (loc != null && ForgeRegistries.ITEMS.containsKey(loc)) {
-            foundItem = ForgeRegistries.ITEMS.getValue(loc);
+         if (loc != null && BuiltInRegistries.ITEM.containsKey(loc)) {
+            foundItem = BuiltInRegistries.ITEM.get(loc);
          }
       }
 
       if (foundItem == null || foundItem == Items.AIR) {
          String searchTarget = item_id.contains(":") ? item_id.split(":")[1] : item_id;
 
-         for (Entry<ResourceKey<Item>, Item> entry : ForgeRegistries.ITEMS.getEntries()) {
+         for (Entry<ResourceKey<Item>, Item> entry : BuiltInRegistries.ITEM.entrySet()) {
             if (entry.getKey().location().getPath().equals(searchTarget)) {
                foundItem = entry.getValue();
                break;

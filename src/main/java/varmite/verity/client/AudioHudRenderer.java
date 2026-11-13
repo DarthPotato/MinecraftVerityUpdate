@@ -2,15 +2,15 @@ package varmite.verity.client;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent.Post;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Post;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.EventBusSubscriber.Bus;
 import varmite.verity.VerityConfig;
 
-@EventBusSubscriber(modid = "verity", value = Dist.CLIENT, bus = Bus.FORGE)
+@EventBusSubscriber(modid = "verity", value = Dist.CLIENT, bus = Bus.GAME)
 public class AudioHudRenderer {
    private static boolean wasRecording = false;
    private static long fadeStartTime = 0L;
@@ -18,7 +18,7 @@ public class AudioHudRenderer {
 
    @SubscribeEvent
    public static void onRenderOverlay(Post event) {
-      if (event.getOverlay().id().equals(VanillaGuiOverlay.HOTBAR.id())) {
+      if (event.getName().equals(VanillaGuiLayers.HOTBAR)) {
          Minecraft mc = Minecraft.getInstance();
          if (!mc.options.hideGui && mc.player != null) {
             if (!VerityConfig.IMMERSIVE_MODE.get()) {
@@ -42,8 +42,8 @@ public class AudioHudRenderer {
 
                if (!(alphaMultiplier <= 0.0F)) {
                   GuiGraphics graphics = event.getGuiGraphics();
-                  int screenWidth = event.getWindow().getGuiScaledWidth();
-                  int screenHeight = event.getWindow().getGuiScaledHeight();
+                  int screenWidth = mc.getWindow().getGuiScaledWidth();
+                  int screenHeight = mc.getWindow().getGuiScaledHeight();
                   int barWidth = 80;
                   int barHeight = 4;
                   int x = (screenWidth - barWidth) / 2;

@@ -2,11 +2,10 @@ package varmite.verity.client;
 
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent.ClientTickEvent;
-import net.minecraftforge.event.TickEvent.Phase;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import varmite.verity.client.audio.MicrophoneManager;
 import varmite.verity.client.audio.MicrophoneRecorder;
 import varmite.verity.client.audio.TTSHandler;
@@ -25,25 +24,23 @@ public class KeybindHandler {
    }
 
    @SubscribeEvent
-   public static void onClientTick(ClientTickEvent event) {
-      if (event.phase == Phase.END) {
-         if (KeybindRegistry.PUSH_TO_TALK != null && KeybindRegistry.CYCLE_MIC != null) {
-            if (KeybindRegistry.CYCLE_MIC.consumeClick()) {
-               MicrophoneManager.cycleMicrophone();
-            }
+   public static void onClientTick(ClientTickEvent.Post event) {
+      if (KeybindRegistry.PUSH_TO_TALK != null && KeybindRegistry.CYCLE_MIC != null) {
+         if (KeybindRegistry.CYCLE_MIC.consumeClick()) {
+            MicrophoneManager.cycleMicrophone();
+         }
 
-            boolean isKeyDown = KeybindRegistry.PUSH_TO_TALK.isDown();
-            if (isKeyDown && !isRecording) {
-               isRecording = true;
-               TTSHandler.interruptSpeech();
-               RECORDER.startRecording();
-            } else if (!isKeyDown && isRecording) {
-               isRecording = false;
-               byte[] recordedAudio = RECORDER.stopRecording();
-               if (recordedAudio != null && recordedAudio.length > 0) {
-                  CompletableFuture.<String>supplyAsync(() -> TTSHandler.transcribeAudio(recordedAudio, RECORDER.getAudioFormat()))
-                     .thenAccept(KeybindHandler::accept);
-               }
+         boolean isKeyDown = KeybindRegistry.PUSH_TO_TALK.isDown();
+         if (isKeyDown && !isRecording) {
+            isRecording = true;
+            TTSHandler.interruptSpeech();
+            RECORDER.startRecording();
+         } else if (!isKeyDown && isRecording) {
+            isRecording = false;
+            byte[] recordedAudio = RECORDER.stopRecording();
+            if (recordedAudio != null && recordedAudio.length > 0) {
+               CompletableFuture.<String>supplyAsync(() -> TTSHandler.transcribeAudio(recordedAudio, RECORDER.getAudioFormat()))
+                  .thenAccept(KeybindHandler::accept);
             }
          }
       }

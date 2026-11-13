@@ -1,8 +1,10 @@
 package varmite.verity.client.gui;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.neoforged.neoforge.common.util.INBTSerializable;
 
-public class PlayerKarma {
+public class PlayerKarma implements INBTSerializable<CompoundTag> {
    private int karma;
    private final int MIN_KARMA = 0;
    private final int MAX_KARMA = 20;
@@ -33,5 +35,17 @@ public class PlayerKarma {
 
    public void loadNBTData(CompoundTag nbt) {
       this.karma = nbt.getInt("player_karma");
+   }
+
+   @Override
+   public CompoundTag serializeNBT(HolderLookup.Provider provider) {
+      CompoundTag nbt = new CompoundTag();
+      this.saveNBTData(nbt);
+      return nbt;
+   }
+
+   @Override
+   public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
+      this.loadNBTData(nbt);
    }
 }

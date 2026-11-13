@@ -1,26 +1,26 @@
 package varmite.verity.network;
 
-import java.util.function.Supplier;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public class KarmaSyncS2CPacket {
-   private final int karma;
+public record KarmaSyncS2CPacket(int karma) implements CustomPacketPayload {
+   public static final CustomPacketPayload.Type<KarmaSyncS2CPacket> TYPE = new CustomPacketPayload.Type<>(
+      ResourceLocation.fromNamespaceAndPath("verity", "karma_sync")
+   );
+   public static final StreamCodec<RegistryFriendlyByteBuf, KarmaSyncS2CPacket> STREAM_CODEC = StreamCodec.composite(
+      ByteBufCodecs.INT, KarmaSyncS2CPacket::karma, KarmaSyncS2CPacket::new
+   );
 
-   public KarmaSyncS2CPacket(int karma) {
-      this.karma = karma;
+   @Override
+   public CustomPacketPayload.Type<KarmaSyncS2CPacket> type() {
+      return TYPE;
    }
 
-   public KarmaSyncS2CPacket(FriendlyByteBuf buf) {
-      this.karma = buf.readInt();
-   }
-
-   public void toBytes(FriendlyByteBuf buf) {
-      buf.writeInt(this.karma);
-   }
-
-   public void handle(Supplier<Context> supplier) {
-      Context context = supplier.get();
-      context.enqueueWork(() -> ClientKarmaData.set(this.karma));
+   public static void handle(KarmaSyncS2CPacket payload, IPayloadContext context) {
+      context.enqueueWork(() -> ClientKarmaData.set(payload.karma()));
    }
 }

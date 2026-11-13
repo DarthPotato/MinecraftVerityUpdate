@@ -2,20 +2,20 @@ package varmite.verity;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.server.MinecraftServer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.server.ServerStartingEvent;
-import net.minecraftforge.event.server.ServerStoppingEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig.Type;
-import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig.Type;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.slf4j.Logger;
+import varmite.verity.client.gui.PlayerKarmaProvider;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.llm.store.chat.ChatMemoryManager;
 import varmite.verity.entity.llm.store.memory.VerityMemoryManager;
@@ -24,8 +24,6 @@ import varmite.verity.environment.items.ModCreativeModeTabs;
 import varmite.verity.environment.items.ModItems;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.ModBusCommonSetup;
-import varmite.verity.event.ModEvents;
-import varmite.verity.network.ModMessages;
 import varmite.verity.network.ModNetwork;
 import varmite.verity.triggers.ModTriggers;
 
@@ -34,24 +32,22 @@ public class Verity {
    public static final String MOD_ID = "verity";
    public static final Logger LOGGER = LogUtils.getLogger();
 
-   public Verity() {
-      IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
-      ModLoadingContext.get().registerConfig(Type.COMMON, VerityConfig.SPEC);
-      ModNetwork.register();
+   public Verity(IEventBus modEventBus, ModContainer container) {
+      container.registerConfig(Type.COMMON, VerityConfig.SPEC);
+      ModNetwork.register(modEventBus);
       modEventBus.addListener(this::commonSetup);
-      MinecraftForge.EVENT_BUS.register(this);
+      NeoForge.EVENT_BUS.register(this);
       ModCreativeModeTabs.register(modEventBus);
       ModEntities.register(modEventBus);
       ModItems.register(modEventBus);
       ModSounds.register(modEventBus);
       ModBlocks.register(modEventBus);
-      ModTriggers.UNBOX_VERITY_TRIGGER.toString();
-      MinecraftForge.EVENT_BUS.register(ModEvents.class);
+      ModTriggers.register(modEventBus);
+      PlayerKarmaProvider.register(modEventBus);
       modEventBus.addListener(ModBusCommonSetup::registerAttributes);
    }
 
    private void commonSetup(FMLCommonSetupEvent event) {
-      event.enqueueWork(ModMessages::register);
       quietRetryLogging();
    }
 

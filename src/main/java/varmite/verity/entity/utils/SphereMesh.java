@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public final class SphereMesh {
@@ -31,13 +30,12 @@ public final class SphereMesh {
       int a
    ) {
       VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(texture));
-      Matrix4f pose = poseStack.last().pose();
-      Matrix3f normal = poseStack.last().normal();
-      drawSphere(pose, normal, consumer, radius, latitudes, longitudes, packedLight, r, g, b, a);
+      PoseStack.Pose last = poseStack.last();
+      drawSphere(last.pose(), last, consumer, radius, latitudes, longitudes, packedLight, r, g, b, a);
    }
 
    private static void drawSphere(
-      Matrix4f pose, Matrix3f normal, VertexConsumer consumer, float radius, int latitudes, int longitudes, int light, int r, int g, int b, int a
+      Matrix4f pose, PoseStack.Pose normal, VertexConsumer consumer, float radius, int latitudes, int longitudes, int light, int r, int g, int b, int a
    ) {
       for (int lat = 0; lat <= latitudes; lat++) {
          float theta1 = (float)(lat * Math.PI / latitudes);
@@ -55,7 +53,7 @@ public final class SphereMesh {
    }
 
    private static void addVertex(
-      Matrix4f pose, Matrix3f normalMatrix, VertexConsumer consumer, float radius, float theta, float phi, int light, int r, int g, int b, int a
+      Matrix4f pose, PoseStack.Pose normalPose, VertexConsumer consumer, float radius, float theta, float phi, int light, int r, int g, int b, int a
    ) {
       float x = (float)(radius * Math.sin(theta) * Math.cos(phi));
       float y = (float)(radius * Math.cos(theta));
@@ -68,12 +66,11 @@ public final class SphereMesh {
       float nx = x / length;
       float ny = y / length;
       float nz = z / length;
-      consumer.vertex(pose, x, y, z)
-         .color(r, g, b, a)
-         .uv(u, v)
-         .overlayCoords(OverlayTexture.NO_OVERLAY)
-         .uv2(light)
-         .normal(normalMatrix, nx, ny, nz)
-         .endVertex();
+      consumer.addVertex(pose, x, y, z)
+         .setColor(r, g, b, a)
+         .setUv(u, v)
+         .setOverlay(OverlayTexture.NO_OVERLAY)
+         .setLight(light)
+         .setNormal(normalPose, nx, ny, nz);
    }
 }

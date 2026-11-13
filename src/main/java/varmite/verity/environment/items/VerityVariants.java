@@ -1,7 +1,6 @@
 package varmite.verity.environment.items;
 
 import java.util.List;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
@@ -29,11 +28,8 @@ public final class VerityVariants {
    }
 
    public static String fromStack(ItemStack stack) {
-      if (stack.hasTag()) {
-         CompoundTag tag = stack.getTag();
-         if (tag.contains("VerityVariant")) {
-            return sanitize(tag.getString("VerityVariant"));
-         }
+      if (StackData.has(stack, "VerityVariant")) {
+         return sanitize(StackData.getString(stack, "VerityVariant"));
       }
 
       return "happy";

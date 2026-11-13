@@ -1,36 +1,29 @@
 package varmite.verity.triggers;
 
-import com.google.gson.JsonObject;
-import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Optional;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
-import net.minecraft.advancements.critereon.DeserializationContext;
+import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 public class FavoriteSongTrigger extends SimpleCriterionTrigger<FavoriteSongTrigger.TriggerInstance> {
-   public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("verity", "favoritesong");
+   public static final String ID = "favoritesong";
 
    @Override
-   public ResourceLocation getId() {
-      return ID;
-   }
-
-   protected FavoriteSongTrigger.TriggerInstance createInstance(JsonObject json, ContextAwarePredicate player, DeserializationContext context) {
-      return new FavoriteSongTrigger.TriggerInstance(player);
+   public Codec<FavoriteSongTrigger.TriggerInstance> codec() {
+      return FavoriteSongTrigger.TriggerInstance.CODEC;
    }
 
    public void trigger(ServerPlayer player) {
       this.trigger(player, instance -> true);
    }
 
-   public static class TriggerInstance extends AbstractCriterionTriggerInstance {
-      public TriggerInstance(ContextAwarePredicate player) {
-         super(FavoriteSongTrigger.ID, player);
-      }
-
-      public static FavoriteSongTrigger.TriggerInstance unboxed() {
-         return new FavoriteSongTrigger.TriggerInstance(ContextAwarePredicate.ANY);
-      }
+   public record TriggerInstance(Optional<ContextAwarePredicate> player) implements SimpleCriterionTrigger.SimpleInstance {
+      public static final Codec<FavoriteSongTrigger.TriggerInstance> CODEC = RecordCodecBuilder.create(
+         instance -> instance.group(EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(FavoriteSongTrigger.TriggerInstance::player))
+            .apply(instance, FavoriteSongTrigger.TriggerInstance::new)
+      );
    }
 }

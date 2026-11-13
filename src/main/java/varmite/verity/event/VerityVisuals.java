@@ -3,11 +3,11 @@ package varmite.verity.event;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.Mth;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ViewportEvent.ComputeFogColor;
-import net.minecraftforge.client.event.ViewportEvent.RenderFog;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ViewportEvent.ComputeFogColor;
+import net.neoforged.neoforge.client.event.ViewportEvent.RenderFog;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import varmite.verity.VerityConfig;
 
 @EventBusSubscriber(modid = "verity", value = Dist.CLIENT)

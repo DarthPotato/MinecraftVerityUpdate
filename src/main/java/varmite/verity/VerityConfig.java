@@ -1,10 +1,10 @@
 package varmite.verity;
 
-import net.minecraftforge.common.ForgeConfigSpec;
-import net.minecraftforge.common.ForgeConfigSpec.BooleanValue;
-import net.minecraftforge.common.ForgeConfigSpec.Builder;
-import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
-import net.minecraftforge.common.ForgeConfigSpec.EnumValue;
+import net.neoforged.neoforge.common.ModConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
+import net.neoforged.neoforge.common.ModConfigSpec.Builder;
+import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
+import net.neoforged.neoforge.common.ModConfigSpec.EnumValue;
 import varmite.verity.types.HostileEvent;
 import varmite.verity.types.STTProvider;
 import varmite.verity.types.TTSLanguage;
@@ -14,7 +14,7 @@ public class VerityConfig {
    public static final String DEFAULT_AI_ENDPOINT = "http://127.0.0.1:11434/v1";
    public static final String DEFAULT_API_KEY = "ollama";
    public static final String DEFAULT_AI_MODEL = "qwen3.5:9b";
-   public static final ForgeConfigSpec SPEC;
+   public static final ModConfigSpec SPEC;
    public static final BooleanValue REQUIRE_VERITY;
    public static final BooleanValue TRUE_DARKNESS;
    public static final BooleanValue VERITY_FOG;

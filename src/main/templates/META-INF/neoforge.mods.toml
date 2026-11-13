@@ -1,0 +1,44 @@
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
+license="${mod_license}"
+issueTrackerURL="https://legacy.curseforge.com/minecraft/mc-mods/verity-je/settings/issues"
+
+[[mods]]
+modId="${mod_id}"
+version="${mod_version}"
+displayName="${mod_name}"
+logoFile="icon.png"
+authors="Varmite, BlockMaster29, JJack, ErrorCezar"
+credits="ThatMob (Verity's Creator)"
+description='''Hello, I'm Verity! Your personal helper friend. You can ask me anything, I know everything.'''
+
+[[mixins]]
+config="verity.mixins.json"
+
+[[dependencies.${mod_id}]]
+    modId="neoforge"
+    type="required"
+    versionRange="[${neo_version},)"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="minecraft"
+    type="required"
+    versionRange="${minecraft_version_range}"
+    ordering="NONE"
+    side="BOTH"
+
+[[dependencies.${mod_id}]]
+    modId="yet_another_config_lib_v3"
+    type="required"
+    versionRange="[3.8,)"
+    ordering="NONE"
+    side="CLIENT"
+
+[[dependencies.${mod_id}]]
+    modId="geckolib"
+    type="required"
+    versionRange="[4.9,)"
+    ordering="NONE"
+    side="BOTH"

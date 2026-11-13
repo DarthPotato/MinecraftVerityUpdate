@@ -1,26 +1,26 @@
 package varmite.verity.network;
 
-import java.util.function.Supplier;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.network.NetworkEvent.Context;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
+import net.neoforged.neoforge.network.handling.IPayloadContext;
 
-public record PlayTtsPayload(int entityId, String text) {
-   public static void encode(PlayTtsPayload payload, FriendlyByteBuf buf) {
-      buf.writeInt(payload.entityId);
-      buf.writeUtf(payload.text);
+public record PlayTtsPayload(int entityId, String text) implements CustomPacketPayload {
+   public static final CustomPacketPayload.Type<PlayTtsPayload> TYPE = new CustomPacketPayload.Type<>(
+      ResourceLocation.fromNamespaceAndPath("verity", "play_tts")
+   );
+   public static final StreamCodec<RegistryFriendlyByteBuf, PlayTtsPayload> STREAM_CODEC = StreamCodec.composite(
+      ByteBufCodecs.INT, PlayTtsPayload::entityId, ByteBufCodecs.STRING_UTF8, PlayTtsPayload::text, PlayTtsPayload::new
+   );
+
+   @Override
+   public CustomPacketPayload.Type<PlayTtsPayload> type() {
+      return TYPE;
    }
 
-   public static PlayTtsPayload decode(FriendlyByteBuf buf) {
-      int entityId = buf.readInt();
-      String text = buf.readUtf(32767);
-      return new PlayTtsPayload(entityId, text);
-   }
-
-   public static void handle(PlayTtsPayload payload, Supplier<Context> ctxSupplier) {
-      Context ctx = ctxSupplier.get();
-      ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> PlayTtsClientHandler.handlePacket(payload)));
-      ctx.setPacketHandled(true);
+   public static void handle(PlayTtsPayload payload, IPayloadContext context) {
+      context.enqueueWork(() -> PlayTtsClientHandler.handlePacket(payload));
    }
 }

@@ -16,7 +16,6 @@ import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet.Named;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundStopSoundPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -39,13 +38,14 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.HitResult.Type;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.forgespi.language.IModInfo;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforgespi.language.IModInfo;
 import varmite.verity.entity.VerityState;
 import varmite.verity.entity.llm.LLMUtility;
 import varmite.verity.entity.llm.store.memory.VerityMemoryManager;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.environment.items.ModItems;
+import varmite.verity.environment.items.StackData;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.HostileEvents;
 import varmite.verity.event.ModEvents;
@@ -198,7 +198,7 @@ public class Tools {
                return "No village found within search range.";
             }
 
-            ModTriggers.VILLAGE_TRIGGER.trigger(this.player);
+            ModTriggers.VILLAGE_TRIGGER.get().trigger(this.player);
             return "Nearest village at X="
                + nearestVillage.getX()
                + " Y=~ Z="
@@ -300,7 +300,7 @@ public class Tools {
          ResourceLocation soundLoc = ResourceLocation.parse(sound_id);
          SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundLoc);
          if (sound != null && VerityState.verityEntity != null) {
-            ModTriggers.PLAY_SOUND_TRIGGER.trigger(this.player);
+            ModTriggers.PLAY_SOUND_TRIGGER.get().trigger(this.player);
             this.level.playSound((Player)null, VerityState.verityEntity.blockPosition(), sound, SoundSource.NEUTRAL, 1.0F, 1.0F);
             return "Successfully played the sound.";
          } else {
@@ -334,7 +334,7 @@ public class Tools {
       return this.serverCall(() -> {
          if (VerityState.verityEntity != null) {
             this.level.playSound((Player)null, VerityState.verityEntity.blockPosition(), ModSounds.VERITY_DISC_SOUND.get(), SoundSource.VOICE, 1.0F, 1.0F);
-            ModTriggers.FAVORITE_SONG_TRIGGER.trigger(this.player);
+            ModTriggers.FAVORITE_SONG_TRIGGER.get().trigger(this.player);
             return "Successfully played the song.";
          } else {
             return "Failed, not in world.";
@@ -358,8 +358,8 @@ public class Tools {
       return this.serverCall(() -> {
          if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved()) {
             ItemStack retStack = new ItemStack(ModItems.VERITY_ITEM.get());
-            CompoundTag retTag = retStack.getOrCreateTag();
-            retTag.putString("VerityVariant", VerityState.verityEntity.getVariant());
+            String variant = VerityState.verityEntity.getVariant();
+            StackData.update(retStack, retTag -> retTag.putString("VerityVariant", variant));
             this.player.getInventory().add(retStack);
             VerityState.verityEntity.discard();
             VerityState.verityEntity = null;
@@ -374,7 +374,7 @@ public class Tools {
    @Tool("Get the block the player is looking at")
    String get_block_player_is_looking_at() {
       return this.serverCall(() -> {
-         double reach = this.player.getBlockReach() * 2.0;
+         double reach = this.player.blockInteractionRange() * 2.0;
          Vec3 eyePosition = this.player.getEyePosition();
          Vec3 viewVector = this.player.getViewVector(1.0F);
          Vec3 targetPosition = eyePosition.add(viewVector.scale(reach));

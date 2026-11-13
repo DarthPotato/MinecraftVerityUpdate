@@ -1,25 +1,31 @@
 package varmite.verity.environment.items;
 
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
-import net.minecraft.world.item.RecordItem;
+import net.minecraft.world.item.JukeboxSong;
 import net.minecraft.world.item.Item.Properties;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
-import varmite.verity.environment.sounds.ModSounds;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.Registries;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 public class ModItems {
-   public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(ForgeRegistries.ITEMS, "verity");
-   public static final RegistryObject<Item> VERITY_ITEM = ITEMS.register("verity_item", () -> new VerityItem(new Properties()));
-   public static final RegistryObject<Item> FLASHLIGHT = ITEMS.register("flashlight", () -> new Item(new Properties()));
-   public static final RegistryObject<Item> VERITY_DISC = ITEMS.register(
-      "verity_disc", () -> new RecordItem(15, ModSounds.VERITY_DISC_SOUND, new Properties().stacksTo(1).rarity(Rarity.RARE), 3000)
+   public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Registries.ITEM, "verity");
+   public static final DeferredHolder<Item, Item> VERITY_ITEM = ITEMS.register("verity_item", () -> new VerityItem(new Properties()));
+   public static final DeferredHolder<Item, Item> FLASHLIGHT = ITEMS.register("flashlight", () -> new Item(new Properties()));
+   public static final DeferredHolder<Item, Item> VERITY_DISC = ITEMS.register(
+      "verity_disc", () -> new Item(new Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(song("verity_disc")))
    );
-   public static final RegistryObject<Item> VERITY_EDIT_DISC = ITEMS.register(
-      "verity_edit_disc", () -> new RecordItem(15, ModSounds.VERITY_EDIT_DISC_SOUND, new Properties().stacksTo(1).rarity(Rarity.RARE), 400)
+   public static final DeferredHolder<Item, Item> VERITY_EDIT_DISC = ITEMS.register(
+      "verity_edit_disc", () -> new Item(new Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(song("verity_edit_disc")))
    );
+
+   /** The discs are data-driven since 1.21: see data/verity/jukebox_song. */
+   private static ResourceKey<JukeboxSong> song(String name) {
+      return ResourceKey.create(Registries.JUKEBOX_SONG, ResourceLocation.fromNamespaceAndPath("verity", name));
+   }
 
    public static void register(IEventBus bus) {
       ITEMS.register(bus);

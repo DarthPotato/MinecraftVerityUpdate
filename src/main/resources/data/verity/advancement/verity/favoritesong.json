@@ -1,14 +1,14 @@
 {
-  "parent": "verity:verity/root",
+  "parent": "verity:verity/talk",
   "display": {
     "icon": {
-      "item": "verity:verity_item"
+      "id": "verity:verity_disc"
     },
     "title": {
-      "text": "Talk to Verity"
+      "text": "Favorite Song"
     },
     "description": {
-      "text": "Introduce yourself."
+      "text": "Ask Verity to play his favorite song."
     },
     "frame": "task",
     "show_toast": true,
@@ -16,13 +16,13 @@
     "hidden": false
   },
   "criteria": {
-    "talk": {
-      "trigger": "verity:talk"
+    "favoritesong": {
+      "trigger": "verity:favoritesong"
     }
   },
   "requirements": [
     [
-      "talk"
+      "favoritesong"
     ]
   ]
 }

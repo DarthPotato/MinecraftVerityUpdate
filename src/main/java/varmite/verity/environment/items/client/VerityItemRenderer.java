@@ -41,7 +41,7 @@ public class VerityItemRenderer extends BlockEntityWithoutLevelRenderer {
       float stretchY = 1.0F;
       float stretchXZ = 1.0F;
       if (VerityState.isClientTalking) {
-         float talkTime = (Minecraft.getInstance().player != null ? Minecraft.getInstance().player.tickCount : 0) + Minecraft.getInstance().getFrameTime();
+         float talkTime = (Minecraft.getInstance().player != null ? Minecraft.getInstance().player.tickCount : 0) + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
          stretchY = 1.0F + Mth.sin(talkTime * 0.6F) * 0.12F;
          stretchXZ = 1.0F + (1.0F - stretchY) * 0.5F;
       }

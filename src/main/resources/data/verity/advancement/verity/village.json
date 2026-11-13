@@ -1,14 +1,14 @@
 {
-  "parent": "verity:verity/badday",
+  "parent": "verity:verity/talk",
   "display": {
     "icon": {
-      "item": "minecraft:spider_eye"
+      "id": "minecraft:emerald"
     },
     "title": {
-      "text": "Something is coming in 3 days"
+      "text": "Don't go east"
     },
     "description": {
-      "text": "What does he mean by that?"
+      "text": "Ask Verity for the nearest village."
     },
     "frame": "task",
     "show_toast": true,
@@ -16,13 +16,13 @@
     "hidden": false
   },
   "criteria": {
-    "threedays": {
-      "trigger": "verity:threedays"
+    "village": {
+      "trigger": "verity:village"
     }
   },
   "requirements": [
     [
-      "threedays"
+      "village"
     ]
   ]
 }

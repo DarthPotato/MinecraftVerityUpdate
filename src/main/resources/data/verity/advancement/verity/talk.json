@@ -1,14 +1,14 @@
 {
-  "parent": "verity:verity/karmachange",
+  "parent": "verity:verity/root",
   "display": {
     "icon": {
-      "item": "minecraft:diamond"
+      "id": "verity:verity_item"
     },
     "title": {
-      "text": "Friendy Minecraft Helper"
+      "text": "Talk to Verity"
     },
     "description": {
-      "text": "Make Verity happy."
+      "text": "Introduce yourself."
     },
     "frame": "task",
     "show_toast": true,
@@ -16,13 +16,13 @@
     "hidden": false
   },
   "criteria": {
-    "goodkarma": {
-      "trigger": "verity:goodkarma"
+    "talk": {
+      "trigger": "verity:talk"
     }
   },
   "requirements": [
     [
-      "goodkarma"
+      "talk"
     ]
   ]
 }

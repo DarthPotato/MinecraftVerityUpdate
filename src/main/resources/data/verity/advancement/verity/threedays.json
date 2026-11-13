@@ -1,14 +1,14 @@
 {
-  "parent": "verity:verity/karmachange",
+  "parent": "verity:verity/badday",
   "display": {
     "icon": {
-      "item": "minecraft:rotten_flesh"
+      "id": "minecraft:spider_eye"
     },
     "title": {
-      "text": "I have feelings too"
+      "text": "Something is coming in 3 days"
     },
     "description": {
-      "text": "Make Verity mad."
+      "text": "What does he mean by that?"
     },
     "frame": "task",
     "show_toast": true,
@@ -16,13 +16,13 @@
     "hidden": false
   },
   "criteria": {
-    "badkarma": {
-      "trigger": "verity:badkarma"
+    "threedays": {
+      "trigger": "verity:threedays"
     }
   },
   "requirements": [
     [
-      "badkarma"
+      "threedays"
     ]
   ]
 }

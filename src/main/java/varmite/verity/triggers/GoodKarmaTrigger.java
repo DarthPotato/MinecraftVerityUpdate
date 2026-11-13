@@ -1,36 +1,29 @@
 package varmite.verity.triggers;
 
-import com.google.gson.JsonObject;
-import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Optional;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
-import net.minecraft.advancements.critereon.DeserializationContext;
+import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
 public class GoodKarmaTrigger extends SimpleCriterionTrigger<GoodKarmaTrigger.TriggerInstance> {
-   public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("verity", "goodkarma");
+   public static final String ID = "goodkarma";
 
    @Override
-   public ResourceLocation getId() {
-      return ID;
-   }
-
-   protected GoodKarmaTrigger.TriggerInstance createInstance(JsonObject json, ContextAwarePredicate player, DeserializationContext context) {
-      return new GoodKarmaTrigger.TriggerInstance(player);
+   public Codec<GoodKarmaTrigger.TriggerInstance> codec() {
+      return GoodKarmaTrigger.TriggerInstance.CODEC;
    }
 
    public void trigger(ServerPlayer player) {
       this.trigger(player, instance -> true);
    }
 
-   public static class TriggerInstance extends AbstractCriterionTriggerInstance {
-      public TriggerInstance(ContextAwarePredicate player) {
-         super(GoodKarmaTrigger.ID, player);
-      }
-
-      public static GoodKarmaTrigger.TriggerInstance unboxed() {
-         return new GoodKarmaTrigger.TriggerInstance(ContextAwarePredicate.ANY);
-      }
+   public record TriggerInstance(Optional<ContextAwarePredicate> player) implements SimpleCriterionTrigger.SimpleInstance {
+      public static final Codec<GoodKarmaTrigger.TriggerInstance> CODEC = RecordCodecBuilder.create(
+         instance -> instance.group(EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(GoodKarmaTrigger.TriggerInstance::player))
+            .apply(instance, GoodKarmaTrigger.TriggerInstance::new)
+      );
    }
 }

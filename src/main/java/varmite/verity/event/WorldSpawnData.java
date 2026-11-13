@@ -1,6 +1,7 @@
 package varmite.verity.event;
 
 import java.util.UUID;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.server.level.ServerLevel;
@@ -32,7 +33,7 @@ public class WorldSpawnData extends SavedData {
    }
 
    @Override
-   public CompoundTag save(CompoundTag tag) {
+   public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
       tag.putBoolean("hasSpawnedEntity", this.hasSpawnedEntity);
       tag.putFloat("verityKarma", this.verityKarma);
       tag.putBoolean("hasProvokedSpawn", this.hasProvokedSpawn);
@@ -46,10 +47,10 @@ public class WorldSpawnData extends SavedData {
    }
 
    public static WorldSpawnData get(ServerLevel level) {
-      return level.getServer().overworld().getDataStorage().computeIfAbsent(WorldSpawnData::load, WorldSpawnData::new, "verity_world_data");
+      return level.getServer().overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(WorldSpawnData::new, WorldSpawnData::load), "verity_world_data");
    }
 
-   public static WorldSpawnData load(CompoundTag tag) {
+   public static WorldSpawnData load(CompoundTag tag, HolderLookup.Provider registries) {
       WorldSpawnData data = new WorldSpawnData();
       data.hasSpawnedEntity = tag.getBoolean("hasSpawnedEntity");
       data.hasProvokedSpawn = tag.getBoolean("hasProvokedSpawn");

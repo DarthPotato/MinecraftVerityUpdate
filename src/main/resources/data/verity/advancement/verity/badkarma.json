@@ -1,14 +1,14 @@
 {
-  "parent": "verity:verity/talk",
+  "parent": "verity:verity/karmachange",
   "display": {
     "icon": {
-      "item": "minecraft:emerald"
+      "id": "minecraft:rotten_flesh"
     },
     "title": {
-      "text": "Don't go east"
+      "text": "I have feelings too"
     },
     "description": {
-      "text": "Ask Verity for the nearest village."
+      "text": "Make Verity mad."
     },
     "frame": "task",
     "show_toast": true,
@@ -16,13 +16,13 @@
     "hidden": false
   },
   "criteria": {
-    "village": {
-      "trigger": "verity:village"
+    "badkarma": {
+      "trigger": "verity:badkarma"
     }
   },
   "requirements": [
     [
-      "village"
+      "badkarma"
     ]
   ]
 }

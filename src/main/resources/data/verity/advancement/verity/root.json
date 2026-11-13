@@ -1,28 +1,28 @@
 {
-  "parent": "verity:verity/talk",
   "display": {
     "icon": {
-      "item": "minecraft:creeper_head"
+      "id": "verity:verity_item"
     },
     "title": {
-      "text": "Make a sound"
+      "text": "Hello, I'm Verity"
     },
     "description": {
-      "text": "Ask Verity to make a sound."
+      "text": "Your minecraft helper friend."
     },
+    "background": "minecraft:textures/block/yellow_wool.png",
     "frame": "task",
     "show_toast": true,
     "announce_to_chat": true,
     "hidden": false
   },
   "criteria": {
-    "playsound": {
-      "trigger": "verity:playsound"
+    "open_box": {
+      "trigger": "verity:open_box"
     }
   },
   "requirements": [
     [
-      "playsound"
+      "open_box"
     ]
   ]
 }

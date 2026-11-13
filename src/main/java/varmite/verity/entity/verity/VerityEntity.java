@@ -46,7 +46,7 @@ import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
@@ -54,7 +54,6 @@ import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.HostileEvents;
 import varmite.verity.event.ModEvents;
 import varmite.verity.event.WorldSpawnData;
-import varmite.verity.network.ModNetwork;
 import varmite.verity.network.PlayTtsPayload;
 import varmite.verity.types.HostileEvent;
 
@@ -112,15 +111,15 @@ public class VerityEntity extends PathfinderMob {
    }
 
    @Override
-   protected void defineSynchedData() {
-      super.defineSynchedData();
-      this.entityData.define(TEXTURE_PATH, "textures/entity/happy.png");
-      this.entityData.define(IS_TALKING, false);
-      this.entityData.define(TALK_FRAME, 0);
-      this.entityData.define(BOUNCE_START_TICK, -1000);
-      this.entityData.define(OWNER_UUID, Optional.empty());
-      this.entityData.define(IS_MONSTROUS, false);
-      this.entityData.define(APOLOGY_COUNT, 0);
+   protected void defineSynchedData(SynchedEntityData.Builder builder) {
+      super.defineSynchedData(builder);
+      builder.define(TEXTURE_PATH, "textures/entity/happy.png");
+      builder.define(IS_TALKING, false);
+      builder.define(TALK_FRAME, 0);
+      builder.define(BOUNCE_START_TICK, -1000);
+      builder.define(OWNER_UUID, Optional.empty());
+      builder.define(IS_MONSTROUS, false);
+      builder.define(APOLOGY_COUNT, 0);
    }
 
    public Optional<UUID> getOwnerUUID() {
@@ -132,15 +131,13 @@ public class VerityEntity extends PathfinderMob {
    }
 
    @Override
-   public SpawnGroupData finalizeSpawn(
-      ServerLevelAccessor pLevel, DifficultyInstance pDifficulty, MobSpawnType pReason, @Nullable SpawnGroupData pSpawnData, @Nullable CompoundTag pDataTag
-   ) {
+   public SpawnGroupData finalizeSpawn(ServerLevelAccessor pLevel, DifficultyInstance pDifficulty, MobSpawnType pReason, @Nullable SpawnGroupData pSpawnData) {
       Player closestPlayer = pLevel.getNearestPlayer(this, 10.0);
       if (closestPlayer != null) {
          this.setOwnerUUID(closestPlayer.getUUID());
       }
 
-      return super.finalizeSpawn(pLevel, pDifficulty, pReason, pSpawnData, pDataTag);
+      return super.finalizeSpawn(pLevel, pDifficulty, pReason, pSpawnData);
    }
 
    public void triggerBoxDrop() {
@@ -177,7 +174,7 @@ public class VerityEntity extends PathfinderMob {
                   Random random1 = new Random();
                   int i = random1.nextInt(3);
                   this.setVariant("hurt");
-                  ModNetwork.INSTANCE.send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> this), new PlayTtsPayload(this.getId(), "Ouch"));
+                  PacketDistributor.sendToPlayersTrackingEntityAndSelf(this, new PlayTtsPayload(this.getId(), "Ouch"));
                   if (i == 0) {
                      this.playSound(ModSounds.IMPACT_0.get(), 1.0F, 1.0F);
                   } else if (i == 1) {

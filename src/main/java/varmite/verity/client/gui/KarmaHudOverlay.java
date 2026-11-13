@@ -2,7 +2,7 @@ package varmite.verity.client.gui;
 
 import com.mojang.math.Axis;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraftforge.client.gui.overlay.IGuiOverlay;
+import net.minecraft.client.gui.LayeredDraw;
 import varmite.verity.VerityConfig;
 import varmite.verity.network.ClientKarmaData;
 
@@ -12,7 +12,9 @@ public class KarmaHudOverlay {
    private static final ResourceLocation FACE_HAPPY = ResourceLocation.fromNamespaceAndPath("verity", "textures/karma_bar/happy.png");
    private static final ResourceLocation FACE_NEUTRAL = ResourceLocation.fromNamespaceAndPath("verity", "textures/karma_bar/neutral.png");
    private static final ResourceLocation FACE_ANGRY = ResourceLocation.fromNamespaceAndPath("verity", "textures/karma_bar/angry.png");
-   public static final IGuiOverlay HUD_KARMA = (gui, guiGraphics, partialTick, width, height) -> {
+   public static final LayeredDraw.Layer HUD_KARMA = (guiGraphics, deltaTracker) -> {
+      int width = guiGraphics.guiWidth();
+      int height = guiGraphics.guiHeight();
       int karma = ClientKarmaData.getPlayerKarma();
       int maxKarma = 20;
       if (!VerityConfig.IMMERSIVE_MODE.get()) {

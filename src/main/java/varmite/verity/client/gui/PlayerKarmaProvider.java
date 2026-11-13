@@ -1,42 +1,19 @@
 package varmite.verity.client.gui;
 
-import net.minecraft.core.Direction;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.common.capabilities.CapabilityManager;
-import net.minecraftforge.common.capabilities.CapabilityToken;
-import net.minecraftforge.common.capabilities.ICapabilityProvider;
-import net.minecraftforge.common.util.INBTSerializable;
-import net.minecraftforge.common.util.LazyOptional;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import java.util.function.Supplier;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.attachment.AttachmentType;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-public class PlayerKarmaProvider implements ICapabilityProvider, INBTSerializable<CompoundTag> {
-   public static final Capability<PlayerKarma> PLAYER_KARMA = CapabilityManager.get(new CapabilityToken<PlayerKarma>() {});
-   private PlayerKarma karma = null;
-   private final LazyOptional<PlayerKarma> optional = LazyOptional.of(this::createPlayerKarma);
+/** The player karma capability from the Forge build, as a data attachment. It is copied on death like before. */
+public class PlayerKarmaProvider {
+   public static final DeferredRegister<AttachmentType<?>> ATTACHMENT_TYPES = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, "verity");
+   public static final Supplier<AttachmentType<PlayerKarma>> PLAYER_KARMA = ATTACHMENT_TYPES.register(
+      "properties", () -> AttachmentType.serializable(PlayerKarma::new).copyOnDeath().build()
+   );
 
-   private PlayerKarma createPlayerKarma() {
-      if (this.karma == null) {
-         this.karma = new PlayerKarma();
-      }
-
-      return this.karma;
-   }
-
-   @NotNull
-   @Override
-   public <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-      return cap == PLAYER_KARMA ? this.optional.cast() : LazyOptional.empty();
-   }
-
-   public CompoundTag serializeNBT() {
-      CompoundTag nbt = new CompoundTag();
-      this.createPlayerKarma().saveNBTData(nbt);
-      return nbt;
-   }
-
-   public void deserializeNBT(CompoundTag nbt) {
-      this.createPlayerKarma().loadNBTData(nbt);
+   public static void register(IEventBus eventBus) {
+      ATTACHMENT_TYPES.register(eventBus);
    }
 }

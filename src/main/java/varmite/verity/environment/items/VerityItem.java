@@ -1,8 +1,7 @@
 package varmite.verity.environment.items;
 
-import java.util.function.Consumer;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -17,16 +16,13 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item.Properties;
-import net.minecraftforge.client.extensions.common.IClientItemExtensions;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.verity.VerityEntity;
-import varmite.verity.environment.items.client.VerityItemRenderer;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.ModEvents;
 import varmite.verity.event.WorldSpawnData;
-import varmite.verity.network.ModNetwork;
 import varmite.verity.network.PlayTtsPayload;
 
 public class VerityItem extends Item {
@@ -77,16 +73,16 @@ public class VerityItem extends Item {
                ServerLevel level = (ServerLevel)entity.level();
                BlockPos pos = entity.blockPosition();
                String variantToSpawn = "happy";
-               if (stack.hasTag() && stack.getTag().contains("VerityVariant")) {
-                  variantToSpawn = stack.getTag().getString("VerityVariant");
+               if (StackData.has(stack, "VerityVariant")) {
+                  variantToSpawn = StackData.getString(stack, "VerityVariant");
                }
 
                VerityEntity spawnedEntity = ModEntities.VERITY_ENTITY.get().create(level);
                if (spawnedEntity != null) {
                   spawnedEntity.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
                   spawnedEntity.setVariant(variantToSpawn);
-                  if (stack.hasTag() && stack.hasTag()) {
-                     spawnedEntity.readAdditionalSaveData(stack.getTag());
+                  if (stack.has(DataComponents.CUSTOM_DATA)) {
+                     spawnedEntity.readAdditionalSaveData(StackData.copy(stack));
                   }
 
                   level.addFreshEntity(spawnedEntity);
@@ -110,16 +106,6 @@ public class VerityItem extends Item {
    }
 
    @Override
-   public void initializeClient(Consumer<IClientItemExtensions> consumer) {
-      consumer.accept(new IClientItemExtensions() {
-         @Override
-         public BlockEntityWithoutLevelRenderer getCustomRenderer() {
-            return new VerityItemRenderer();
-         }
-      });
-   }
-
-   @Override
    public void onDestroyed(ItemEntity itemEntity, DamageSource damageSource) {
       if (damageSource.is(DamageTypeTags.IS_FIRE)) {
          if (itemEntity.level() instanceof ServerLevel serverLevel) {
@@ -131,8 +117,7 @@ public class VerityItem extends Item {
                serverLevel.addFreshEntity(spawnedEntity);
                spawnedEntity.setVariant("serious_1");
                spawnedEntity.level().playSound((Player)null, safePos, ModSounds.BONE_0.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
-               ModNetwork.INSTANCE
-                  .send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> spawnedEntity), new PlayTtsPayload(spawnedEntity.getId(), "DO NOT DO THAT!"));
+               PacketDistributor.sendToPlayersTrackingEntityAndSelf(spawnedEntity, new PlayTtsPayload(spawnedEntity.getId(), "DO NOT DO THAT!"));
                serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));
                data = WorldSpawnData.get(serverLevel);
                serverLevel.playSound((Player)null, spawnedEntity.blockPosition(), SoundEvents.LAVA_EXTINGUISH, SoundSource.PLAYERS, 1.0F, 0.8F);
@@ -148,11 +133,10 @@ public class VerityItem extends Item {
       } else if (damageSource.is(DamageTypeTags.IS_EXPLOSION)) {
          if (itemEntity.level() instanceof ServerLevel serverLevel && serverLevel.getNearestPlayer(itemEntity, 256.0) instanceof ServerPlayer p) {
             ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
-            CompoundTag tag = stack.getOrCreateTag();
-            tag.putString("VerityVariant", "serious_3");
+            StackData.update(stack, tag -> tag.putString("VerityVariant", "serious_3"));
             p.getInventory().add(stack);
             p.sendSystemMessage(Component.literal("<Verity> Ayo chat why u let me explode"));
-            ModNetwork.INSTANCE.send(PacketDistributor.PLAYER.with(() -> p), new PlayTtsPayload(p.getId(), "Ayo chat why u let me explode"));
+            PacketDistributor.sendToPlayer(p, new PlayTtsPayload(p.getId(), "Ayo chat why u let me explode"));
             serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));
             data = WorldSpawnData.get(serverLevel);
             serverLevel.playSound((Player)null, p.blockPosition(), SoundEvents.GHAST_SCREAM, SoundSource.PLAYERS, 1.0F, 1.3F);
@@ -160,11 +144,10 @@ public class VerityItem extends Item {
       } else if (damageSource.is(DamageTypes.CACTUS) && itemEntity.level() instanceof ServerLevel serverLevel) {
          if (serverLevel.getNearestPlayer(itemEntity, 256.0) instanceof ServerPlayer p) {
             ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
-            CompoundTag tag = stack.getOrCreateTag();
-            tag.putString("VerityVariant", "serious_3");
+            StackData.update(stack, tag -> tag.putString("VerityVariant", "serious_3"));
             p.getInventory().add(stack);
             p.sendSystemMessage(Component.literal("<Verity> DON'T DO THAT."));
-            ModNetwork.INSTANCE.send(PacketDistributor.PLAYER.with(() -> p), new PlayTtsPayload(p.getId(), "DO NOT DO THAT!"));
+            PacketDistributor.sendToPlayer(p, new PlayTtsPayload(p.getId(), "DO NOT DO THAT!"));
             serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));
             data = WorldSpawnData.get(serverLevel);
             serverLevel.playSound((Player)null, p.blockPosition(), ModSounds.BONE_0.get(), SoundSource.PLAYERS, 1.0F, 0.8F);

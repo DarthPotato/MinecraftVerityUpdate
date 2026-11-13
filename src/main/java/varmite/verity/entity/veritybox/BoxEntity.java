@@ -25,11 +25,11 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.AnimatableManager.ControllerRegistrar;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.triggers.ModTriggers;
@@ -48,9 +48,9 @@ public class BoxEntity extends LivingEntity implements GeoEntity {
    }
 
    @Override
-   protected void defineSynchedData() {
-      super.defineSynchedData();
-      this.entityData.define(HAS_CLICKED, false);
+   protected void defineSynchedData(SynchedEntityData.Builder builder) {
+      super.defineSynchedData(builder);
+      builder.define(HAS_CLICKED, false);
    }
 
    @Override
@@ -110,7 +110,7 @@ public class BoxEntity extends LivingEntity implements GeoEntity {
       MinecraftServer server = this.getServer();
 
       for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-         ModTriggers.UNBOX_VERITY_TRIGGER.trigger(player);
+         ModTriggers.UNBOX_VERITY_TRIGGER.get().trigger(player);
       }
 
       this.isOpened = true;

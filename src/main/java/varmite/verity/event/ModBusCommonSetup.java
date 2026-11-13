@@ -1,6 +1,6 @@
 package varmite.verity.event;
 
-import net.minecraftforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.entity.veritybox.BoxEntity;

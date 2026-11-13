@@ -2,8 +2,7 @@
   "required": true,
   "minVersion": "0.8",
   "package": "varmite.verity.environment.mixins",
-  "compatibilityLevel": "JAVA_17",
-  "refmap": "verity.refmap.json",
+  "compatibilityLevel": "JAVA_21",
   "client": [
     "LightTextureMixin",
     "TitleScreenMixin"

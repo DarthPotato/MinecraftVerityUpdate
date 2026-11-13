@@ -1,5 +1,6 @@
 package varmite.verity.event;
 
+import varmite.verity.environment.items.StackData;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -9,6 +10,7 @@ import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
@@ -39,31 +41,25 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.ServerChatEvent;
-import net.minecraftforge.event.TickEvent.Phase;
-import net.minecraftforge.event.TickEvent.ServerTickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
-import net.minecraftforge.event.entity.item.ItemExpireEvent;
-import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.event.entity.player.PlayerSleepInBedEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent.Clone;
-import net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.network.PacketDistributor;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.item.ItemExpireEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickItem;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
-import varmite.verity.client.gui.PlayerKarma;
-import varmite.verity.client.gui.PlayerKarmaProvider;
 import varmite.verity.command.ChangeKarmaCommand;
 import varmite.verity.command.RecoverVerityCommand;
 import varmite.verity.entity.ModEntities;
@@ -75,7 +71,6 @@ import varmite.verity.environment.items.ModItems;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.network.KarmaSyncS2CPacket;
 import varmite.verity.network.ModMessages;
-import varmite.verity.network.ModNetwork;
 import varmite.verity.network.PlayTtsPayload;
 
 @EventBusSubscriber(modid = "verity")
@@ -104,25 +99,6 @@ public class ModEvents {
       for (ServerPlayer player : level.players()) {
          ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)data.verityKarma), player);
       }
-   }
-
-   @SubscribeEvent
-   public static void onAttachCapabilitiesPlayer(AttachCapabilitiesEvent<Entity> event) {
-      if (event.getObject() instanceof Player && !event.getObject().getCapability(PlayerKarmaProvider.PLAYER_KARMA).isPresent()) {
-         event.addCapability(ResourceLocation.fromNamespaceAndPath("verity", "properties"), new PlayerKarmaProvider());
-      }
-   }
-
-   @SubscribeEvent
-   public static void onPlayerCloned(Clone event) {
-      event.getOriginal()
-         .getCapability(PlayerKarmaProvider.PLAYER_KARMA)
-         .ifPresent(oldStore -> event.getEntity().getCapability(PlayerKarmaProvider.PLAYER_KARMA).ifPresent(newStore -> newStore.copyFrom(oldStore)));
-   }
-
-   @SubscribeEvent
-   public static void onRegisterCapabilities(RegisterCapabilitiesEvent event) {
-      event.register(PlayerKarma.class);
    }
 
    @SubscribeEvent
@@ -167,10 +143,10 @@ public class ModEvents {
    }
 
    @SubscribeEvent
-   public static void onVerityTakeDamage(LivingDamageEvent event) {
+   public static void onVerityTakeDamage(LivingDamageEvent.Pre event) {
       if (event.getEntity() instanceof VerityEntity verity && !verity.level().isClientSide()) {
          if (event.getSource().is(DamageTypeTags.IS_FIRE) || event.getSource().is(DamageTypes.LAVA)) {
-            event.setAmount(0.0F);
+            event.setNewDamage(0.0F);
             System.out.println("Verity is on fire");
             ServerLevel serverLevel = (ServerLevel)verity.level();
             long currentTime = serverLevel.getGameTime();
@@ -187,10 +163,7 @@ public class ModEvents {
                .execute(
                   () -> {
                      if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved()) {
-                        ModNetwork.INSTANCE
-                           .send(
-                              PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> VerityState.verityEntity),
-                              new PlayTtsPayload(VerityState.verityEntity.getId(), answer)
+                        PacketDistributor.sendToPlayersTrackingEntityAndSelf(VerityState.verityEntity, new PlayTtsPayload(VerityState.verityEntity.getId(), answer)
                            );
                      }
 
@@ -202,7 +175,7 @@ public class ModEvents {
 
          if (event.getSource().is(DamageTypes.IN_WALL) || event.getSource().is(DamageTypes.FALLING_BLOCK) || event.getSource().is(DamageTypes.FALLING_ANVIL)) {
             System.out.println("Verity is suffocating");
-            event.setAmount(0.0F);
+            event.setNewDamage(0.0F);
             ServerLevel serverLevel = (ServerLevel)verity.level();
             long currentTime = serverLevel.getGameTime();
             long lastHurt = VerityState.HURT_COOLDOWN.getOrDefault(verity.getUUID(), 0L);
@@ -232,8 +205,7 @@ public class ModEvents {
             p.getInventory().add(new ItemStack(ModItems.VERITY_ITEM.get()));
             serverLevel.playSound((Player)null, p.blockPosition(), SoundEvents.GHAST_HURT, SoundSource.PLAYERS, 1.0F, 1.0F);
             p.sendSystemMessage(Component.literal("<Verity> Ayo chat why u lettin me despawn like that"));
-            ModNetwork.INSTANCE
-               .send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> p), new PlayTtsPayload(p.getId(), "Ayo chat why u lettin me despawn like that"));
+            PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new PlayTtsPayload(p.getId(), "Ayo chat why u lettin me despawn like that"));
          }
       }
    }
@@ -246,8 +218,8 @@ public class ModEvents {
             ItemStack stack = player.getItemInHand(event.getHand());
             if (stack.is(ModItems.VERITY_ITEM.get())) {
                String variantToSpawn = "default";
-               if (stack.hasTag() && stack.getTag().contains("VerityVariant")) {
-                  variantToSpawn = stack.getTag().getString("VerityVariant");
+               if (StackData.has(stack, "VerityVariant")) {
+                  variantToSpawn = StackData.getString(stack, "VerityVariant");
                }
 
                stack.shrink(1);
@@ -260,10 +232,7 @@ public class ModEvents {
                   newVerity.setOwnerUUID(player.getUUID());
                   player.level().addFreshEntity(newVerity);
                   VerityState.verityEntity = newVerity;
-                  ModNetwork.INSTANCE
-                     .send(
-                        PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> VerityState.verityEntity),
-                        new PlayTtsPayload(VerityState.verityEntity.getId(), "AAAAAAAAHHH")
+                  PacketDistributor.sendToPlayersTrackingEntityAndSelf(VerityState.verityEntity, new PlayTtsPayload(VerityState.verityEntity.getId(), "AAAAAAAAHHH")
                      );
                   player.level().playSound((Player)null, player.blockPosition(), SoundEvents.ENDER_DRAGON_FLAP, SoundSource.PLAYERS, 1.0F, 1.0F);
                   newVerity.setDeltaMovement(launchVelocity);
@@ -282,9 +251,8 @@ public class ModEvents {
          event.setCancellationResult(InteractionResult.SUCCESS);
          if (!event.getLevel().isClientSide()) {
             Player p = event.getEntity();
-            CompoundTag tag = stack.getOrCreateTag();
-            boolean isNowOn = !tag.getBoolean("FlashlightOn");
-            tag.putBoolean("FlashlightOn", isNowOn);
+            boolean isNowOn = !StackData.getBoolean(stack, "FlashlightOn");
+            StackData.update(stack, tag -> tag.putBoolean("FlashlightOn", isNowOn));
             p.swing(event.getHand(), true);
             if (isNowOn) {
                p.level().playSound((Player)null, p.blockPosition(), SoundEvents.BAMBOO_WOOD_BUTTON_CLICK_ON, SoundSource.PLAYERS, 1.0F, 1.0F);
@@ -306,8 +274,7 @@ public class ModEvents {
             level.playSound((Player)null, standIn.blockPosition(), SoundEvents.TOTEM_USE, SoundSource.NEUTRAL, 1.0F, 1.0F);
             VerityEntity verity = VerityState.verityEntity;
             if (verity != null && !verity.isRemoved()) {
-               ModNetwork.INSTANCE
-                  .send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> verity), new PlayTtsPayload(verity.getId(), "The darkness... it's gone. Thank you."));
+               PacketDistributor.sendToPlayersTrackingEntityAndSelf(verity, new PlayTtsPayload(verity.getId(), "The darkness... it's gone. Thank you."));
                if (VerityConfig.IMMERSIVE_MODE.get()) {
                   return;
                }
@@ -344,89 +311,84 @@ public class ModEvents {
    }
 
    @SubscribeEvent
-   public static void onServerTick(ServerTickEvent event) {
-      if (event.phase == Phase.END) {
-         synchronized (PENDING_TASKS) {
-            if (!PENDING_TASKS.isEmpty()) {
-               ACTIVE_TASKS.addAll(PENDING_TASKS);
-               PENDING_TASKS.clear();
-            }
+   public static void onServerTick(ServerTickEvent.Post event) {
+      synchronized (PENDING_TASKS) {
+         if (!PENDING_TASKS.isEmpty()) {
+            ACTIVE_TASKS.addAll(PENDING_TASKS);
+            PENDING_TASKS.clear();
          }
+      }
 
-         Iterator<ModEvents.ScheduledTask> iterator = ACTIVE_TASKS.iterator();
+      Iterator<ModEvents.ScheduledTask> iterator = ACTIVE_TASKS.iterator();
 
-         while (iterator.hasNext()) {
-            ModEvents.ScheduledTask st = iterator.next();
-            st.ticksRemaining--;
-            if (st.ticksRemaining <= 0) {
-               st.task.run();
-               iterator.remove();
-            }
+      while (iterator.hasNext()) {
+         ModEvents.ScheduledTask st = iterator.next();
+         st.ticksRemaining--;
+         if (st.ticksRemaining <= 0) {
+            st.task.run();
+            iterator.remove();
          }
+      }
 
-         if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved() && !VerityState.verityEntity.level().isClientSide()) {
-            if (VerityState.lonelinessTimer > 0) {
-               VerityState.lonelinessTimer--;
+      if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved() && !VerityState.verityEntity.level().isClientSide()) {
+         if (VerityState.lonelinessTimer > 0) {
+            VerityState.lonelinessTimer--;
+         } else {
+            VerityState.lonelinessTimer = 3000;
+            ServerLevel level = (ServerLevel)VerityState.verityEntity.level();
+            Player nearestPlayer = level.getNearestPlayer(VerityState.verityEntity, 32.0);
+            if (nearestPlayer == null) {
+               updateAndSyncKarma(level, -1.0F);
+               if (!VerityState.verityEntity.isRemoved()) {
+                  VerityState.verityEntity.setVariant("serious_1");
+                  PacketDistributor.sendToPlayersTrackingEntityAndSelf(VerityState.verityEntity, new PlayTtsPayload(VerityState.verityEntity.getId(), "I'm alone... where did you go?")
+                     );
+                  if (VerityConfig.IMMERSIVE_MODE.get()) {
+                     return;
+                  }
+
+                  VerityState.verityEntity
+                     .getServer()
+                     .getPlayerList()
+                     .broadcastSystemMessage(
+                        Component.literal("<%s> I'm alone... where did you go?".formatted(VerityConfig.VERITY_CUSTOM_NAME.get())), false
+                     );
+               }
             } else {
                VerityState.lonelinessTimer = 3000;
-               ServerLevel level = (ServerLevel)VerityState.verityEntity.level();
-               Player nearestPlayer = level.getNearestPlayer(VerityState.verityEntity, 32.0);
-               if (nearestPlayer == null) {
-                  updateAndSyncKarma(level, -1.0F);
-                  if (!VerityState.verityEntity.isRemoved()) {
-                     VerityState.verityEntity.setVariant("serious_1");
-                     ModNetwork.INSTANCE
-                        .send(
-                           PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> VerityState.verityEntity),
-                           new PlayTtsPayload(VerityState.verityEntity.getId(), "I'm alone... where did you go?")
-                        );
-                     if (VerityConfig.IMMERSIVE_MODE.get()) {
-                        return;
-                     }
-
-                     VerityState.verityEntity
-                        .getServer()
-                        .getPlayerList()
-                        .broadcastSystemMessage(
-                           Component.literal("<%s> I'm alone... where did you go?".formatted(VerityConfig.VERITY_CUSTOM_NAME.get())), false
-                        );
-                  }
-               } else {
-                  VerityState.lonelinessTimer = 3000;
-               }
             }
          }
+      }
 
-         if (VerityState.hasSpawned
-            && VerityState.verityEntity != null
-            && !VerityState.verityEntity.isRemoved()
-            && !VerityState.verityEntity.level().isClientSide()) {
-            if (VerityState.idleChatTimer > 0) {
-               if (!VerityState.verityEntity.isOnFire()) {
-                  VerityState.idleChatTimer--;
-               }
-            } else {
-               VerityState.idleChatTimer = 2400 + new Random().nextInt(2400);
-               ServerLevel level = (ServerLevel)VerityState.verityEntity.level();
-               if (level.getNearestPlayer(VerityState.verityEntity, 32.0) instanceof ServerPlayer serverPlayer
-                  && !VerityState.verityEntity.getEntityData().get(VerityEntity.IS_TALKING)) {
-                  VerityState.verityEntity.startTalking(80);
-                  String idlePrompt = "<SYSTEM> You decide to start a random conversation with the user. Ask them a question, comment the environment or even give random facts.\n";
-                  AiManager.queryAI(VerityState.verityEntity, idlePrompt, serverPlayer);
-               }
+      if (VerityState.hasSpawned
+         && VerityState.verityEntity != null
+         && !VerityState.verityEntity.isRemoved()
+         && !VerityState.verityEntity.level().isClientSide()) {
+         if (VerityState.idleChatTimer > 0) {
+            if (!VerityState.verityEntity.isOnFire()) {
+               VerityState.idleChatTimer--;
+            }
+         } else {
+            VerityState.idleChatTimer = 2400 + new Random().nextInt(2400);
+            ServerLevel level = (ServerLevel)VerityState.verityEntity.level();
+            if (level.getNearestPlayer(VerityState.verityEntity, 32.0) instanceof ServerPlayer serverPlayer
+               && !VerityState.verityEntity.getEntityData().get(VerityEntity.IS_TALKING)) {
+               VerityState.verityEntity.startTalking(80);
+               String idlePrompt = "<SYSTEM> You decide to start a random conversation with the user. Ask them a question, comment the environment or even give random facts.\n";
+               AiManager.queryAI(VerityState.verityEntity, idlePrompt, serverPlayer);
             }
          }
       }
    }
 
    @SubscribeEvent
-   public static void onPlayerSleep(PlayerSleepInBedEvent event) {
+   public static void onPlayerSleep(CanPlayerSleepEvent event) {
       Player p = event.getEntity();
       if (!p.level().isClientSide()) {
          UUID standInId = WorldSpawnData.get((ServerLevel)p.level()).activeDemon;
          Entity standIn = standInId == null ? null : ((ServerLevel)p.level()).getEntity(standInId);
          if (standIn != null && standIn.distanceToSqr(p) < 4096.0) {
-            event.setResult(BedSleepingProblem.OTHER_PROBLEM);
+            event.setProblem(BedSleepingProblem.OTHER_PROBLEM);
             p.displayClientMessage(Component.literal("You cannot rest now, Verity is nearby..."), true);
          }
       }
@@ -474,7 +436,7 @@ public class ModEvents {
                }
 
                ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
-               CompoundTag itemNbt = stack.getOrCreateTag();
+               CompoundTag itemNbt = new CompoundTag();
                vEntity.addAdditionalSaveData(itemNbt);
                itemNbt.putString("VerityVariant", vEntity.getVariant());
                itemNbt.putString("VerityName", VerityConfig.VERITY_CUSTOM_NAME.get());
@@ -483,7 +445,8 @@ public class ModEvents {
                   name = name + "™";
                }
 
-               stack.setHoverName(Component.literal(name));
+               StackData.set(stack, itemNbt);
+               stack.set(DataComponents.CUSTOM_NAME, Component.literal(name));
                vEntity.discard();
                VerityState.hasSpawned = false;
                vEntity.level().playSound((Player)null, vEntity.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1.0F, 1.0F);
@@ -594,7 +557,7 @@ public class ModEvents {
             VerityEntity verity = VerityState.verityEntity;
             if (verity != null && !verity.isRemoved() && verity.getOwnerUUID().isPresent() && player.getUUID().equals(verity.getOwnerUUID().get())) {
                ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
-               CompoundTag itemNbt = stack.getOrCreateTag();
+               CompoundTag itemNbt = new CompoundTag();
                verity.addAdditionalSaveData(itemNbt);
                itemNbt.putString("VerityVariant", verity.getVariant());
                itemNbt.putString("VerityName", VerityConfig.VERITY_CUSTOM_NAME.get());
@@ -603,7 +566,8 @@ public class ModEvents {
                   name = name + "™";
                }
 
-               stack.setHoverName(Component.literal(name));
+               StackData.set(stack, itemNbt);
+               stack.set(DataComponents.CUSTOM_NAME, Component.literal(name));
                player.getInventory().add(stack);
                VerityState.hasSpawned = false;
                verity.discard();
@@ -661,8 +625,8 @@ public class ModEvents {
             }
 
             String variantToSpawn = "default";
-            if (stack.hasTag() && stack.getTag().contains("VerityVariant")) {
-               variantToSpawn = stack.getTag().getString("VerityVariant");
+            if (StackData.has(stack, "VerityVariant")) {
+               variantToSpawn = StackData.getString(stack, "VerityVariant");
             }
 
             player.swing(hand, true);
@@ -672,8 +636,8 @@ public class ModEvents {
             if (spawnedVerity != null) {
                spawnedVerity.setVariant(variantToSpawn);
                spawnedVerity.getPersistentData().putBoolean("WasThrown", false);
-               if (stack.hasTag() && stack.getTag().contains("VerityName")) {
-                  spawnedVerity.setCustomName(Component.literal(stack.getTag().getString("VerityName")));
+               if (StackData.has(stack, "VerityName")) {
+                  spawnedVerity.setCustomName(Component.literal(StackData.getString(stack, "VerityName")));
                   spawnedVerity.setCustomNameVisible(true);
                }
             }

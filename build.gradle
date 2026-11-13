@@ -1,8 +1,7 @@
 plugins {
-    id 'eclipse'
+    id 'java-library'
+    id 'net.neoforged.moddev' version '2.0.148'
     id 'idea'
-    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
-    id 'org.spongepowered.mixin' version '0.7.+'
 }
 
 version = mod_version
@@ -12,56 +11,58 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(17)
-
-println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
-
-minecraft {
-    mappings channel: mapping_channel, version: mapping_version
-    copyIdeResources = true
-
-    runs {
-        configureEach {
-            workingDirectory project.file('run')
-            property 'forge.logging.console.level', 'debug'
-            mods {
-                "${mod_id}" {
-                    source sourceSets.main
-                }
-            }
-        }
-        client {}
-        server {
-            args '--nogui'
-        }
-    }
-}
-
-// The original SRG refmap is deleted; the annotation processor regenerates it.
-mixin {
-    add sourceSets.main, 'verity.refmap.json'
-    config 'verity.mixins.json'
-}
-
-jarJar.enable()
+java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
 repositories {
     mavenCentral()
-    // Jars that are not on Maven Central (see below), in Maven layout, no POMs.
+    maven {
+        name = 'GeckoLib'
+        url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+        content { includeGroup 'software.bernie.geckolib' }
+    }
+    exclusiveContent {
+        forRepository { maven { name = 'Modrinth'; url = 'https://api.modrinth.com/maven' } }
+        filter { includeGroup 'maven.modrinth' }
+    }
+    // Jars that are not on Maven Central (sherpa-onnx), in Maven layout, no POMs.
     maven {
         url = uri('libs')
         metadataSources { artifact() }
-        content {
-            includeGroup 'com.k2fsa.sherpa.onnx'
+        content { includeGroup 'com.k2fsa.sherpa.onnx' }
+    }
+}
+
+neoForge {
+    version = project.neo_version
+
+    parchment {
+        mappingsVersion = project.parchment_mappings_version
+        minecraftVersion = project.parchment_minecraft_version
+    }
+
+    runs {
+        client {
+            client()
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+        configureEach {
+            gameDirectory = project.file('run')
+            logLevel = org.slf4j.event.Level.DEBUG
         }
     }
-    // Owner's exact mod jars (GeckoLib, YACL) and the original Verity jar.
-    flatDir { dir 'reference' }
+
+    mods {
+        "${mod_id}" {
+            sourceSet(sourceSets.main)
+        }
+    }
 }
 
 // Third-party libraries from Verity 6.0.0-beta.9's META-INF/jarjar that the trimmed build still
-// uses, at the exact versions from its metadata.json. The original shipped 16 more for its
-// built-in Gemini and Mistral clients (see baseline-1.20.1 for the full list).
+// uses, at the exact versions from its metadata.json.
 ext.bundledLibs = [
         'dev.langchain4j:langchain4j:1.18.0',
         'dev.langchain4j:langchain4j-core:1.18.1',
@@ -86,66 +87,44 @@ ext.bundledLibs = [
 ]
 
 dependencies {
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
-    // Stage 0 step 2 (already done): SRG -> Mojang remap of the original jar, used only as
-    // the Vineflower input. Re-enable to regenerate the remapped jar in the ForgeGradle cache.
-    // compileOnly fg.deobf("blank:verity:6.0.0-beta.9")
-
-    implementation fg.deobf("blank:geckolib-forge-1.20.1:4.8.4")
-    implementation fg.deobf("blank:yet_another_config_lib_v3:3.6.6+1.20.1-forge")
+    implementation "software.bernie.geckolib:geckolib-neoforge-1.21.1:${geckolib_version}"
+    implementation "maven.modrinth:yacl:${yacl_version}"
 
     bundledLibs.each { coords ->
         def (g, a, v) = coords.split(':')
-        // minecraftLibrary puts non-mod libraries on the dev-run classpath as well.
-        minecraftLibrary(coords) { transitive = false }
+        implementation(coords) { transitive = false }
+        // Non-mod libraries are not on the dev-run classpath unless added here.
+        additionalRuntimeClasspath(coords) { transitive = false }
         // Same jar-in-jar metadata as the original: version range [v,), pinned to v.
-        jarJar(group: g, name: a, version: "[${v},)") {
+        jarJar("${g}:${a}") {
             transitive = false
-            jarJar.pin(it, v)
+            version {
+                strictly "[${v},)"
+                prefer v
+            }
         }
     }
-
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
+
+var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    var replaceProperties = [
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            loader_version_range   : loader_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+    ]
+    inputs.properties replaceProperties
+    expand replaceProperties
+    from 'src/main/templates'
+    into 'build/generated/sources/modMetadata'
+}
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
     options.compilerArgs << '-Xmaxerrs' << '2000'
 }
-
-def modManifest = [
-        'Specification-Title'   : mod_id,
-        'Specification-Version' : '1',
-        'Implementation-Title'  : 'Verity-JE',
-        'Implementation-Version': mod_version,
-        'MixinConfigs'          : 'verity.mixins.json'
-]
-
-// MixinGradle writes the refmap into compileJava's temp dir, which is not a declared output.
-// If that file is gone while compileJava is still up to date, the jars silently ship without
-// a refmap, so force a recompile whenever it is missing.
-tasks.named('compileJava').configure {
-    def refmap = layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json')
-    outputs.upToDateWhen { refmap.get().asFile.exists() }
-}
-
-// Plain jar without the bundled libraries; the distributable is the jarJar output below.
-tasks.named('jar', Jar).configure {
-    archiveClassifier = 'slim'
-    manifest { attributes(modManifest) }
-    finalizedBy 'reobfJar'
-}
-
-// verity-<version>.jar: classes + META-INF/jarjar, reobfuscated to SRG.
-tasks.named('jarJar').configure {
-    archiveClassifier = ''
-    manifest { attributes(modManifest) }
-    finalizedBy 'reobfJarJar'
-}
-
-reobf {
-    jarJar {}
-}
-
-tasks.named('assemble').configure { dependsOn 'jarJar' }

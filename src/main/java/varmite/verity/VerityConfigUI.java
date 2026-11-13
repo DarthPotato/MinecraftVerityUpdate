@@ -14,15 +14,14 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.util.Mth;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.fml.common.EventBusSubscriber.Bus;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import varmite.verity.client.VerityPreviewTexture;
-import varmite.verity.event.ModBusClientSetup;
 import varmite.verity.types.HostileEvent;
 import varmite.verity.types.STTProvider;
 import varmite.verity.types.TTSLanguage;
@@ -33,10 +32,9 @@ import varmite.verity.types.VerityVoice;
 public class VerityConfigUI {
    @SubscribeEvent
    public static void onClientSetup(FMLClientSetupEvent event) {
-      IEventBus forgeBus = MinecraftForge.EVENT_BUS;
-      forgeBus.addListener(ModBusClientSetup::registerRenderers);
-      forgeBus.addListener(ModBusClientSetup::onModifyBakingResult);
-      MinecraftForge.registerConfigScreen((minecraft, previousScreen) -> createYACLScreen(previousScreen));
+      ModList.get()
+         .getModContainerById("verity")
+         .ifPresent(container -> container.registerExtensionPoint(IConfigScreenFactory.class, (modContainer, previousScreen) -> createYACLScreen(previousScreen)));
    }
 
    private static VerityVoice readVoice() {

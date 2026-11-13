@@ -172,11 +172,11 @@ public class AiAPI {
          if (serverLevel != null) {
             WorldSpawnData spawnData = WorldSpawnData.get(serverLevel);
             if (spawnData.verityKarma < 7.0F && player != null) {
-               ModTriggers.BAD_KARMA_TRIGGER.trigger(player);
+               ModTriggers.BAD_KARMA_TRIGGER.get().trigger(player);
             }
 
             if (spawnData.verityKarma > 14.0F && player != null) {
-               ModTriggers.GOOD_KARMA_TRIGGER.trigger(player);
+               ModTriggers.GOOD_KARMA_TRIGGER.get().trigger(player);
             }
          }
 
