@@ -5,6 +5,7 @@ import dev.langchain4j.agent.tool.Tool;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -41,12 +42,12 @@ import net.minecraft.world.phys.HitResult.Type;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.forgespi.language.IModInfo;
 import varmite.verity.entity.VerityState;
-import varmite.verity.entity.demon.VerityDemonEntity;
 import varmite.verity.entity.llm.LLMUtility;
 import varmite.verity.entity.llm.store.memory.VerityMemoryManager;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.environment.items.ModItems;
 import varmite.verity.environment.sounds.ModSounds;
+import varmite.verity.event.HostileEvents;
 import varmite.verity.event.ModEvents;
 import varmite.verity.event.WorldSpawnData;
 import varmite.verity.triggers.ModTriggers;
@@ -391,7 +392,9 @@ public class Tools {
    @Tool("Transform into your demon form the next day, only possible before you have ever transformed")
    String transform_next_day() {
       return this.serverCall(() -> {
-         if (WorldSpawnData.get(this.level).hasProvokedSpawn) {
+         if (!HostileEvents.enabled()) {
+            return "Failed, you cannot transform";
+         } else if (WorldSpawnData.get(this.level).hasProvokedSpawn || WorldSpawnData.get(this.level).hostileResolved) {
             return "Failed, you have already transformed once and it cannot happen again";
          } else if (this.level.getDifficulty() != Difficulty.PEACEFUL) {
             VerityState.transformFollowingDay = true;
@@ -495,10 +498,9 @@ public class Tools {
    @Tool("Transform back to your normal form, usable when you are in your demon form")
    String transform_to_normal() {
       return this.serverCall(() -> {
-         for (LivingEntity livingEntity : this.level.getEntitiesOfClass(LivingEntity.class, this.player.getBoundingBox().inflate(64.0))) {
-            if (livingEntity instanceof VerityDemonEntity dE) {
-               dE.kill();
-            }
+         UUID standInId = WorldSpawnData.get(this.level).activeDemon;
+         if (standInId != null && this.level.getEntity(standInId) instanceof LivingEntity standIn) {
+            standIn.kill();
          }
 
          return "Transformed back to normal. Forgive the player";

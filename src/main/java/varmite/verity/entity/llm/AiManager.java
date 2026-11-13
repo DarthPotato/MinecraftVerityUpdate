@@ -9,6 +9,7 @@ import net.minecraftforge.network.PacketDistributor;
 import varmite.verity.Verity;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.verity.VerityEntity;
+import varmite.verity.event.HostileEvents;
 import varmite.verity.event.WorldSpawnData;
 import varmite.verity.network.ModNetwork;
 import varmite.verity.network.PlayTtsPayload;
@@ -20,7 +21,7 @@ public class AiManager {
       if (level != null) {
          MinecraftServer server = level.getServer();
          WorldSpawnData worldData = WorldSpawnData.get(level);
-         long currentDay = level.getDayTime() / 24000L;
+         long currentDay = HostileEvents.progressionActive(level) ? level.getDayTime() / 24000L : 0L;
          float currentKarma = worldData.verityKarma;
          boolean demonLoose = worldData.hasLiveDemon();
          CompletableFuture.<String>supplyAsync(() -> {

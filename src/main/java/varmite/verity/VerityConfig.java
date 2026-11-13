@@ -7,19 +7,16 @@ import net.minecraftforge.common.ForgeConfigSpec.ConfigValue;
 import net.minecraftforge.common.ForgeConfigSpec.EnumValue;
 import varmite.verity.types.AiModelPreset;
 import varmite.verity.types.AiProvider;
+import varmite.verity.types.HostileEvent;
 import varmite.verity.types.STTProvider;
 import varmite.verity.types.TTSLanguage;
 import varmite.verity.types.TTSProvider;
 
 public class VerityConfig {
    public static final ForgeConfigSpec SPEC;
-   public static final BooleanValue CAN_CRASH;
    public static final BooleanValue REQUIRE_VERITY;
-   public static final BooleanValue PLAY_VIDEO;
    public static final BooleanValue TRUE_DARKNESS;
-   public static final BooleanValue KILL_WILDLIFE;
-   public static final BooleanValue KILL_VILLAGERS;
-   public static final BooleanValue KILL_ENTITIES;
+   public static final BooleanValue VERITY_FOG;
    public static final BooleanValue IMMERSIVE_MODE;
    public static final BooleanValue AI_THINK;
    public static final BooleanValue USE_CUSTOM_AI_MODEL;
@@ -31,6 +28,7 @@ public class VerityConfig {
    public static final EnumValue<AiModelPreset> AI_MODEL_PRESET;
    public static final ConfigValue<String> AI_ENDPOINT;
    public static final EnumValue<AiProvider> AI_PROVIDER;
+   public static final EnumValue<HostileEvent> HOSTILE_EVENT;
    public static final EnumValue<TTSProvider> TTS_PROVIDER;
    public static final ConfigValue<String> TTS_ENDPOINT;
    public static final ConfigValue<String> TTS_API_KEY;
@@ -50,13 +48,17 @@ public class VerityConfig {
       Builder builder = new Builder();
       builder.push("GeneralSettings");
       DAY_COUNT = builder.comment("In-game days before Verity turns hostile.").define("dayCount", 5);
-      CAN_CRASH = builder.comment("Allow Verity to kick you from the server.").define("canCrash", true);
-      PLAY_VIDEO = builder.comment("Play the start up video.").define("playVideo", true);
+      HOSTILE_EVENT = builder.comment(
+            "What happens when Verity turns hostile. Runs once per world.",
+            "OFF: nothing, and the day-based personality shift is off too.",
+            "MESSAGE: a chat message stands in for the event, then Verity is back to normal.",
+            "WITHER: a Wither spawns near the player (it destroys blocks). Verity is back to normal once it is gone.",
+            "DEMON: reserved for Verity's demon form, which is not in this build. Behaves like WITHER."
+         )
+         .defineEnum("hostileEvent", HostileEvent.MESSAGE);
       REQUIRE_VERITY = builder.comment("Require 'Verity' in every sentence to speak to him.").define("requireVerity", false);
-      TRUE_DARKNESS = builder.comment("The extreme darkness toggle").define("trueDarkness", true);
-      KILL_WILDLIFE = builder.comment("Toggles if Verity should randomly kill wildlife.").define("killWildlife", true);
-      KILL_ENTITIES = builder.comment("Toggles if Verity can kill entities.").define("killEntities", true);
-      KILL_VILLAGERS = builder.comment("Toggles if Verity should kill villagers.").define("killVillagers", true);
+      TRUE_DARKNESS = builder.comment("The extreme darkness toggle").define("trueDarkness", false);
+      VERITY_FOG = builder.comment("Thicker, darker fog in the overworld.").define("verityFog", false);
       IMMERSIVE_MODE = builder.comment("Toggles the Karma bar above your hotbar.").define("showKarma", false);
       builder.push("AISettings");
       API_KEY = builder.comment("API Key for providers that requires one.").define("apiKey", "");

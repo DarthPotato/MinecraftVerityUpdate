@@ -8,7 +8,6 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
-import varmite.verity.entity.demon.VerityDemonEntity;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.entity.veritybox.BoxEntity;
 
@@ -19,9 +18,6 @@ public class ModEntities {
    );
    public static final Supplier<EntityType<BoxEntity>> BOX_ENTITY = ENTITY_TYPES.register(
       "box", () -> Builder.of(BoxEntity::new, MobCategory.MISC).sized(1.0F, 1.0F).fireImmune().immuneTo(Blocks.POWDER_SNOW).build("box")
-   );
-   public static final Supplier<EntityType<VerityDemonEntity>> VERITY_DEMON_ENTITY = ENTITY_TYPES.register(
-      "verity_demon", () -> Builder.of(VerityDemonEntity::new, MobCategory.MISC).sized(1.2F, 3.0F).build("verity_demon")
    );
 
    public static void register(IEventBus modBus) {

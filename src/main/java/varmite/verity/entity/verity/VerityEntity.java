@@ -20,7 +20,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.DamageTypeTags;
-import net.minecraft.util.Mth;
 import net.minecraft.world.Difficulty;
 import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
@@ -41,7 +40,6 @@ import net.minecraft.world.entity.ai.goal.RandomLookAroundGoal;
 import net.minecraft.world.entity.ai.goal.Goal.Flag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.DoorBlock;
@@ -52,13 +50,13 @@ import net.minecraftforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
-import varmite.verity.entity.demon.VerityDemonEntity;
-import varmite.verity.entity.veritybox.BoxEntity;
 import varmite.verity.environment.sounds.ModSounds;
+import varmite.verity.event.HostileEvents;
 import varmite.verity.event.ModEvents;
 import varmite.verity.event.WorldSpawnData;
 import varmite.verity.network.ModNetwork;
 import varmite.verity.network.PlayTtsPayload;
+import varmite.verity.types.HostileEvent;
 
 public class VerityEntity extends PathfinderMob {
    private static final EntityDataAccessor<String> TEXTURE_PATH = SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.STRING);
@@ -317,20 +315,16 @@ public class VerityEntity extends PathfinderMob {
          long currentDay = serverLevel.getDayTime() / 24000L;
          float currentKarma = WorldSpawnData.get(serverLevel).verityKarma;
          if (currentDay >= VerityConfig.DAY_COUNT.get().intValue() && currentKarma < 9000.0F) {
-            if (serverLevel.getServer().getGameRules().getRule(GameRules.RULE_DAYLIGHT).get() && !serverLevel.getServer().isHardcore()) {
-               serverLevel.getServer().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false, serverLevel.getServer());
-            }
-
             if (!this.isRemoved()) {
                Player player = serverLevel.getNearestPlayer(this, 64.0);
-               if (player != null && !this.hasTransformed && this.transformIntoDemon(player, false)) {
+               if (player != null && !this.hasTransformed && this.startHostileEvent(player, false)) {
                   this.setVariant("noface");
                   this.hasTransformed = true;
                }
             }
          } else if (currentDay >= VerityState.timeWillSpawn && VerityState.transformFollowingDay && !this.isRemoved()) {
             Player player = serverLevel.getNearestPlayer(this, 64.0);
-            if (player != null && !this.hasTransformed && this.transformIntoDemon(player, true)) {
+            if (player != null && !this.hasTransformed && this.startHostileEvent(player, true)) {
                this.setVariant("noface");
                this.hasTransformed = true;
             }
@@ -347,22 +341,6 @@ public class VerityEntity extends PathfinderMob {
             currentDay = serverLevel.getDayTime() / 24000L;
             if (currentDay >= VerityConfig.DAY_COUNT.get() / 2 && !this.hasTriggeredDay2 && currentKarma < 9000.0F) {
                this.hasTriggeredDay2 = true;
-               serverLevel.getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false, serverLevel.getServer());
-               List<Entity> entitiesToKill = new ArrayList<>();
-
-               for (Entity entity : serverLevel.getAllEntities()) {
-                  if (!(entity instanceof Player)
-                     && !(entity instanceof VerityEntity)
-                     && !(entity instanceof BoxEntity)
-                     && !(entity instanceof VerityDemonEntity)
-                     && entity instanceof LivingEntity) {
-                     entitiesToKill.add(entity);
-                  }
-               }
-
-               for (Entity entity : entitiesToKill) {
-                  entity.kill();
-               }
             }
          }
 
@@ -377,66 +355,67 @@ public class VerityEntity extends PathfinderMob {
       return true;
    }
 
-   private boolean transformIntoDemon(Player player, boolean provoked) {
-      if (player.level().getDifficulty() == Difficulty.PEACEFUL) {
+   private boolean startHostileEvent(Player player, boolean provoked) {
+      HostileEvent mode = VerityConfig.HOSTILE_EVENT.get();
+      if (mode == HostileEvent.OFF) {
          return false;
       }
 
       ServerLevel serverLevel = (ServerLevel)this.level();
       WorldSpawnData data = WorldSpawnData.get(serverLevel);
-      if (data.hasLiveDemon()) {
+      if (data.hostileResolved || data.hasLiveDemon()) {
          return false;
       }
 
-      if (provoked ? !data.hasProvokedSpawn : !data.hasHostileDaySpawn) {
-         for (Entity entity : serverLevel.getAllEntities()) {
-            if (entity instanceof VerityDemonEntity) {
-               return false;
-            }
-         }
+      if (provoked ? data.hasProvokedSpawn : data.hasHostileDaySpawn) {
+         return false;
+      }
 
-         BlockPos spawnPos = this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition());
-         Entity demonEntity = ModEntities.VERITY_DEMON_ENTITY.get().spawn(serverLevel, spawnPos, MobSpawnType.CONVERSION);
-         if (demonEntity == null) {
-            return false;
-         }
+      if (mode == HostileEvent.MESSAGE) {
+         this.markHostileEventStarted(player, data, provoked);
+         player.sendSystemMessage(
+            Component.literal("§7Verity's demon form was supposed to show up now. It isn't in this build yet, so imagine something terrifying.")
+         );
+         HostileEvents.resolve(serverLevel);
+         return false;
+      }
 
-         if (provoked) {
-            data.hasProvokedSpawn = true;
-         } else {
-            data.hasHostileDaySpawn = true;
-         }
+      if (player.level().getDifficulty() == Difficulty.PEACEFUL) {
+         return false;
+      }
 
-         data.setActiveDemon(demonEntity.getUUID());
-         VerityState.transformFollowingDay = false;
-         if (VerityConfig.DAY_COUNT.get() <= (int)player.level().getDayTime() / 24000) {
-            VerityConfig.DAY_COUNT.set((int)player.level().getDayTime() / 24000);
-         }
+      BlockPos spawnPos = this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition());
+      Entity standIn = EntityType.WITHER.spawn(serverLevel, spawnPos, MobSpawnType.CONVERSION);
+      if (standIn == null) {
+         return false;
+      }
 
-         VerityState.timeWillSpawn = 0L;
-         this.setMonstrous(true);
-         this.setApologyCount(0);
-         this.clearPlayersWhoLooked();
-         this.pleadingTimer = 6000;
-         player.sendSystemMessage(Component.literal("§4Verity's face goes blank... You must look at him to calm him down."));
-         double dX = player.getX() - demonEntity.getX();
-         double dZ = player.getZ() - demonEntity.getZ();
-         double dY = player.getEyeY() - demonEntity.getEyeY();
-         float yaw = (float)(Mth.atan2(dZ, dX) * (180.0 / Math.PI)) - 90.0F;
-         float pitch = (float)(-(Mth.atan2(dY, Math.sqrt(dX * dX + dZ * dZ)) * (180.0 / Math.PI)));
-         demonEntity.setYRot(yaw);
-         demonEntity.setYHeadRot(yaw);
-         demonEntity.setXRot(pitch);
-         demonEntity.yRotO = yaw;
-         demonEntity.xRotO = pitch;
-         long currentDay = serverLevel.getDayTime() / 24000L;
-         serverLevel.setDayTime(currentDay * 24000L + 18000L);
-         serverLevel.playSound((Player)null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.0F, 0.5F);
-         serverLevel.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 1.0, this.getZ(), 30, 0.5, 0.5, 0.5, 0.05);
-         return true;
+      this.markHostileEventStarted(player, data, provoked);
+      data.setActiveDemon(standIn.getUUID());
+      this.setMonstrous(true);
+      this.setApologyCount(0);
+      this.clearPlayersWhoLooked();
+      this.pleadingTimer = 6000;
+      player.sendSystemMessage(Component.literal("§4Verity's face goes blank... You must look at him to calm him down."));
+      serverLevel.playSound((Player)null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.0F, 0.5F);
+      serverLevel.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 1.0, this.getZ(), 30, 0.5, 0.5, 0.5, 0.05);
+      return true;
+   }
+
+   private void markHostileEventStarted(Player player, WorldSpawnData data, boolean provoked) {
+      if (provoked) {
+         data.hasProvokedSpawn = true;
       } else {
-         return false;
+         data.hasHostileDaySpawn = true;
       }
+
+      data.setDirty();
+      VerityState.transformFollowingDay = false;
+      if (VerityConfig.DAY_COUNT.get() <= (int)player.level().getDayTime() / 24000) {
+         VerityConfig.DAY_COUNT.set((int)player.level().getDayTime() / 24000);
+      }
+
+      VerityState.timeWillSpawn = 0L;
    }
 
    private BlockPos getCreepyDemonSpawnPos(ServerLevel level, BlockPos playerPos) {

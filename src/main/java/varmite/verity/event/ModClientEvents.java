@@ -5,7 +5,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.nbt.CompoundTag;
@@ -13,45 +12,19 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenEvent.Opening;
-import net.minecraftforge.event.TickEvent.ClientTickEvent;
 import net.minecraftforge.event.TickEvent.Phase;
 import net.minecraftforge.event.TickEvent.RenderTickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import varmite.verity.VerityConfig;
 import varmite.verity.client.DynamicLightManager;
-import varmite.verity.client.IntroVideoScreen;
 import varmite.verity.environment.items.ModItems;
 
 @EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class ModClientEvents {
-   private static boolean hasPlayedIntro = false;
    private static Set<BlockPos> previousCenterBlocks = new HashSet<>();
    private static Set<SectionPos> previousSections = new HashSet<>();
    private static long lastChunkUpdateTime = 0L;
    private static final long UPDATE_COOLDOWN_MS = 50L;
-
-   @SubscribeEvent
-   public static void onScreenOpen(Opening event) {
-      if (!hasPlayedIntro && event.getScreen() instanceof TitleScreen) {
-         hasPlayedIntro = true;
-         if (VerityConfig.PLAY_VIDEO.get()) {
-            event.setNewScreen(new IntroVideoScreen(event.getScreen()));
-         }
-      }
-   }
-
-   @SubscribeEvent
-   public static void onClientTick(ClientTickEvent event) {
-      if (event.phase == Phase.END) {
-         Minecraft mc = Minecraft.getInstance();
-         if (mc.player != null && mc.options.gamma().get() > 0.0) {
-            mc.options.gamma().set(0.0);
-            mc.options.save();
-         }
-      }
-   }
 
    @SubscribeEvent
    public static void onRenderTick(RenderTickEvent event) {

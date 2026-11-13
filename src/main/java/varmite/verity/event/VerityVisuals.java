@@ -8,13 +8,14 @@ import net.minecraftforge.client.event.ViewportEvent.ComputeFogColor;
 import net.minecraftforge.client.event.ViewportEvent.RenderFog;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import varmite.verity.VerityConfig;
 
 @EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class VerityVisuals {
    @SubscribeEvent
    public static void onComputeFogColor(ComputeFogColor event) {
       Level level = Minecraft.getInstance().level;
-      if (level != null && level.dimension() == Level.OVERWORLD) {
+      if (VerityConfig.VERITY_FOG.get() && level != null && level.dimension() == Level.OVERWORLD) {
          float partialTick = (float)event.getPartialTick();
          float angle = level.getTimeOfDay(partialTick);
          float brightness = Mth.cos(angle * (float) (Math.PI * 2)) * 2.0F + 0.5F;
@@ -30,7 +31,7 @@ public class VerityVisuals {
 
    @SubscribeEvent
    public static void onRenderFog(RenderFog event) {
-      if (Minecraft.getInstance().level != null && Minecraft.getInstance().level.dimension() == Level.OVERWORLD) {
+      if (VerityConfig.VERITY_FOG.get() && Minecraft.getInstance().level != null && Minecraft.getInstance().level.dimension() == Level.OVERWORLD) {
          float farDistance = event.getFarPlaneDistance();
          event.setNearPlaneDistance(farDistance * 0.1F);
          event.setFarPlaneDistance(farDistance * 0.75F);

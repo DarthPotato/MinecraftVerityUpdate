@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -29,11 +30,7 @@ import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.Entity.RemovalReason;
-import net.minecraft.world.entity.animal.Chicken;
-import net.minecraft.world.entity.animal.Cow;
-import net.minecraft.world.entity.animal.Pig;
-import net.minecraft.world.entity.animal.Sheep;
-import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Player.BedSleepingProblem;
 import net.minecraft.world.item.ItemStack;
@@ -41,7 +38,6 @@ import net.minecraft.world.level.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
-import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -72,7 +68,6 @@ import varmite.verity.command.ChangeKarmaCommand;
 import varmite.verity.command.RecoverVerityCommand;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
-import varmite.verity.entity.demon.VerityDemonEntity;
 import varmite.verity.entity.llm.AiManager;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.entity.veritybox.BoxEntity;
@@ -302,45 +297,35 @@ public class ModEvents {
 
    @SubscribeEvent
    public static void onDeath(LivingDeathEvent event) {
-      if (event.getEntity() instanceof Player p) {
-         if (!(p instanceof ServerPlayer player)) {
-            return;
-         }
-
-         if (event.getSource().getEntity() instanceof VerityDemonEntity && VerityConfig.CAN_CRASH.get()) {
-            player.connection.disconnect(Component.literal("Farewell, " + p.getName().getString()).withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD));
-         }
-      } else if (event.getEntity() instanceof VerityDemonEntity demon && !demon.level().isClientSide()) {
-         ServerLevel level = (ServerLevel)demon.level();
+      if (event.getEntity() instanceof WitherBoss standIn && standIn.level() instanceof ServerLevel level) {
          WorldSpawnData data = WorldSpawnData.get(level);
-         data.clearActiveDemon(demon.getUUID());
-         setAndSyncKarma(level, 20.0F);
-         level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, demon.getX(), demon.getY() + 1.0, demon.getZ(), 100, 0.5, 1.0, 0.5, 0.2);
-         level.playSound((Player)null, demon.blockPosition(), SoundEvents.TOTEM_USE, SoundSource.NEUTRAL, 1.0F, 1.0F);
-         VerityEntity verity = VerityState.verityEntity;
-         if (verity != null && !verity.isRemoved()) {
-            verity.setVariant("happy");
-            ModNetwork.INSTANCE
-               .send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> verity), new PlayTtsPayload(verity.getId(), "The darkness... it's gone. Thank you."));
-            if (VerityConfig.IMMERSIVE_MODE.get()) {
-               return;
-            }
+         if (standIn.getUUID().equals(data.activeDemon)) {
+            HostileEvents.resolve(level);
+            setAndSyncKarma(level, 20.0F);
+            level.sendParticles(ParticleTypes.TOTEM_OF_UNDYING, standIn.getX(), standIn.getY() + 1.0, standIn.getZ(), 100, 0.5, 1.0, 0.5, 0.2);
+            level.playSound((Player)null, standIn.blockPosition(), SoundEvents.TOTEM_USE, SoundSource.NEUTRAL, 1.0F, 1.0F);
+            VerityEntity verity = VerityState.verityEntity;
+            if (verity != null && !verity.isRemoved()) {
+               ModNetwork.INSTANCE
+                  .send(PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> verity), new PlayTtsPayload(verity.getId(), "The darkness... it's gone. Thank you."));
+               if (VerityConfig.IMMERSIVE_MODE.get()) {
+                  return;
+               }
 
-            level.getServer()
-               .getPlayerList()
-               .broadcastSystemMessage(Component.literal("<" + VerityConfig.VERITY_CUSTOM_NAME.get() + "> The darkness... it's gone. Thank you."), false);
+               level.getServer()
+                  .getPlayerList()
+                  .broadcastSystemMessage(Component.literal("<" + VerityConfig.VERITY_CUSTOM_NAME.get() + "> The darkness... it's gone. Thank you."), false);
+            }
          }
       }
    }
 
    @SubscribeEvent
-   public static void onDemonLeaveLevel(EntityLeaveLevelEvent event) {
-      if (!event.getLevel().isClientSide()) {
-         if (event.getEntity() instanceof VerityDemonEntity demon) {
-            RemovalReason reason = demon.getRemovalReason();
-            if (reason != null && reason.shouldDestroy()) {
-               WorldSpawnData.get((ServerLevel)event.getLevel()).clearActiveDemon(demon.getUUID());
-            }
+   public static void onStandInLeaveLevel(EntityLeaveLevelEvent event) {
+      if (event.getEntity() instanceof WitherBoss standIn && event.getLevel() instanceof ServerLevel level) {
+         RemovalReason reason = standIn.getRemovalReason();
+         if (reason != null && reason.shouldDestroy() && standIn.getUUID().equals(WorldSpawnData.get(level).activeDemon)) {
+            HostileEvents.resolve(level);
          }
       }
    }
@@ -438,9 +423,9 @@ public class ModEvents {
    public static void onPlayerSleep(PlayerSleepInBedEvent event) {
       Player p = event.getEntity();
       if (!p.level().isClientSide()) {
-         AABB searchBox = p.getBoundingBox().inflate(64.0);
-         List<VerityDemonEntity> nearbyDemons = p.level().getEntitiesOfClass(VerityDemonEntity.class, searchBox);
-         if (!nearbyDemons.isEmpty()) {
+         UUID standInId = WorldSpawnData.get((ServerLevel)p.level()).activeDemon;
+         Entity standIn = standInId == null ? null : ((ServerLevel)p.level()).getEntity(standInId);
+         if (standIn != null && standIn.distanceToSqr(p) < 4096.0) {
             event.setResult(BedSleepingProblem.OTHER_PROBLEM);
             p.displayClientMessage(Component.literal("You cannot rest now, Verity is nearby..."), true);
          }
@@ -450,32 +435,9 @@ public class ModEvents {
    @SubscribeEvent
    public static void entitySpawnEvent(EntityJoinLevelEvent event) {
       if (!event.getLevel().isClientSide()) {
-         Random rand = new Random();
-         boolean shouldKillEntity = rand.nextBoolean();
          if (event.getEntity().getType() == ModEntities.VERITY_ENTITY.get()) {
             VerityState.hasSpawned = true;
             VerityState.verityEntity = (VerityEntity)event.getEntity();
-         } else if (VerityConfig.KILL_ENTITIES.get()) {
-            Entity entity = event.getEntity();
-            if (entity instanceof Sheep s) {
-               if (VerityConfig.KILL_WILDLIFE.get() && shouldKillEntity) {
-                  s.kill();
-               }
-            } else if (entity instanceof Cow c) {
-               if (VerityConfig.KILL_WILDLIFE.get() && shouldKillEntity) {
-                  c.kill();
-               }
-            } else if (entity instanceof Pig p) {
-               if (VerityConfig.KILL_WILDLIFE.get() && shouldKillEntity) {
-                  p.kill();
-               }
-            } else if (entity instanceof Chicken ch) {
-               if (VerityConfig.KILL_WILDLIFE.get() && shouldKillEntity) {
-                  ch.kill();
-               }
-            } else if (entity instanceof Villager v && VerityConfig.KILL_VILLAGERS.get()) {
-               v.kill();
-            }
          }
       }
    }

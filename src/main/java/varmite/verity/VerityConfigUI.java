@@ -31,6 +31,7 @@ import varmite.verity.client.VerityPreviewTexture;
 import varmite.verity.event.ModBusClientSetup;
 import varmite.verity.types.AiModelPreset;
 import varmite.verity.types.AiProvider;
+import varmite.verity.types.HostileEvent;
 import varmite.verity.types.STTProvider;
 import varmite.verity.types.TTSLanguage;
 import varmite.verity.types.TTSProvider;
@@ -163,22 +164,6 @@ public class VerityConfigUI {
                .name(Component.literal("General"))
                .option(
                   Option.<Boolean>createBuilder()
-                     .name(Component.literal("Can Crash"))
-                     .description(OptionDescription.of(Component.literal("Allow Verity to kick you from the server.")))
-                     .binding(true, VerityConfig.CAN_CRASH, VerityConfig.CAN_CRASH::set)
-                     .controller(TickBoxControllerBuilder::create)
-                     .build()
-               )
-               .option(
-                  Option.<Boolean>createBuilder()
-                     .name(Component.literal("Play Video"))
-                     .description(OptionDescription.of(Component.literal("Play the Verity Edit on the\nstartup of the client.")))
-                     .binding(true, VerityConfig.PLAY_VIDEO, VerityConfig.PLAY_VIDEO::set)
-                     .controller(TickBoxControllerBuilder::create)
-                     .build()
-               )
-               .option(
-                  Option.<Boolean>createBuilder()
                      .name(Component.literal("Require Verity"))
                      .description(OptionDescription.of(Component.literal("Require 'Verity' in every\nsentence to speak to him.")))
                      .binding(false, VerityConfig.REQUIRE_VERITY, VerityConfig.REQUIRE_VERITY::set)
@@ -189,31 +174,15 @@ public class VerityConfigUI {
                   Option.<Boolean>createBuilder()
                      .name(Component.literal("True Darkness"))
                      .description(OptionDescription.of(Component.literal("Toggle the extreme darkness.")))
-                     .binding(true, VerityConfig.TRUE_DARKNESS, VerityConfig.TRUE_DARKNESS::set)
+                     .binding(false, VerityConfig.TRUE_DARKNESS, VerityConfig.TRUE_DARKNESS::set)
                      .controller(TickBoxControllerBuilder::create)
                      .build()
                )
                .option(
                   Option.<Boolean>createBuilder()
-                     .name(Component.literal("Kill Entities"))
-                     .description(OptionDescription.of(Component.literal("Toggles if Verity can kill entities.")))
-                     .binding(true, VerityConfig.KILL_ENTITIES, VerityConfig.KILL_ENTITIES::set)
-                     .controller(TickBoxControllerBuilder::create)
-                     .build()
-               )
-               .option(
-                  Option.<Boolean>createBuilder()
-                     .name(Component.literal("Kill Wildlife"))
-                     .description(OptionDescription.of(Component.literal("Toggles if Verity should kill randomly wildlife.\nPigs, sheep, etc")))
-                     .binding(true, VerityConfig.KILL_WILDLIFE, VerityConfig.KILL_WILDLIFE::set)
-                     .controller(TickBoxControllerBuilder::create)
-                     .build()
-               )
-               .option(
-                  Option.<Boolean>createBuilder()
-                     .name(Component.literal("Kill Villagers"))
-                     .description(OptionDescription.of(Component.literal("Toggles if Verity should kill villagers.")))
-                     .binding(true, VerityConfig.KILL_VILLAGERS, VerityConfig.KILL_VILLAGERS::set)
+                     .name(Component.literal("Verity Fog"))
+                     .description(OptionDescription.of(Component.literal("Thicker, darker fog in the overworld.")))
+                     .binding(false, VerityConfig.VERITY_FOG, VerityConfig.VERITY_FOG::set)
                      .controller(TickBoxControllerBuilder::create)
                      .build()
                )
@@ -228,9 +197,27 @@ public class VerityConfigUI {
                .option(
                   Option.<Integer>createBuilder()
                      .name(Component.literal("Hostile Day Threshold"))
-                     .description(OptionDescription.of(Component.literal("The amount of in-game days before\nVerity turns into a demon.")))
+                     .description(OptionDescription.of(Component.literal("The amount of in-game days before\nVerity turns hostile.")))
                      .binding(5, VerityConfig.DAY_COUNT, VerityConfig.DAY_COUNT::set)
                      .controller(opt -> IntegerFieldControllerBuilder.create(opt).min(1).max(100))
+                     .build()
+               )
+               .option(
+                  Option.<HostileEvent>createBuilder()
+                     .name(Component.literal("Hostile Event"))
+                     .description(
+                        OptionDescription.of(
+                           Component.literal(
+                              "What happens when Verity turns hostile. Runs once per world.\n"
+                                 + "OFF: nothing, and no personality shift.\n"
+                                 + "MESSAGE: a chat message stands in for it.\n"
+                                 + "WITHER: a Wither spawns near you (it destroys blocks).\n"
+                                 + "DEMON: not in this build yet, behaves like WITHER."
+                           )
+                        )
+                     )
+                     .binding(HostileEvent.MESSAGE, VerityConfig.HOSTILE_EVENT, VerityConfig.HOSTILE_EVENT::set)
+                     .controller(opt -> EnumControllerBuilder.create(opt).enumClass(HostileEvent.class))
                      .build()
                )
                .build()

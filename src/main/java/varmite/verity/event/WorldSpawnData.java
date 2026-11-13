@@ -11,6 +11,7 @@ public class WorldSpawnData extends SavedData {
    public boolean hasSpawnedEntity = false;
    public boolean hasProvokedSpawn = false;
    public boolean hasHostileDaySpawn = false;
+   public boolean hostileResolved = false;
    public UUID activeDemon = null;
    public final ListTag chatHistory = new ListTag();
 
@@ -36,6 +37,7 @@ public class WorldSpawnData extends SavedData {
       tag.putFloat("verityKarma", this.verityKarma);
       tag.putBoolean("hasProvokedSpawn", this.hasProvokedSpawn);
       tag.putBoolean("hasHostileDaySpawn", this.hasHostileDaySpawn);
+      tag.putBoolean("hostileResolved", this.hostileResolved);
       if (this.activeDemon != null) {
          tag.putUUID("activeDemon", this.activeDemon);
       }
@@ -52,6 +54,7 @@ public class WorldSpawnData extends SavedData {
       data.hasSpawnedEntity = tag.getBoolean("hasSpawnedEntity");
       data.hasProvokedSpawn = tag.getBoolean("hasProvokedSpawn");
       data.hasHostileDaySpawn = tag.getBoolean("hasHostileDaySpawn");
+      data.hostileResolved = tag.getBoolean("hostileResolved");
       if (tag.hasUUID("activeDemon")) {
          data.activeDemon = tag.getUUID("activeDemon");
       }

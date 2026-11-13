@@ -18,11 +18,8 @@ public class ModSounds {
    public static final RegistryObject<SoundEvent> IMPACT_0 = registerSoundEvent("impact_0");
    public static final RegistryObject<SoundEvent> IMPACT_1 = registerSoundEvent("impact_1");
    public static final RegistryObject<SoundEvent> IMPACT_2 = registerSoundEvent("impact_2");
-   public static final RegistryObject<SoundEvent> INTRO_VIDEO_AUDIO = registerSoundEvent("intro_video_audio");
-   public static final RegistryObject<SoundEvent> CHASE = registerSoundEvent("chase");
    public static final RegistryObject<SoundEvent> BONE_0 = registerSoundEvent("bone_snap");
    public static final RegistryObject<SoundEvent> BONE_1 = registerSoundEvent("bone_break");
-   public static final RegistryObject<SoundEvent> JUMPSCARE = registerSoundEvent("jumpscare");
    public static final RegistryObject<SoundEvent> VERITY_DISC_SOUND = SOUND_EVENTS.register(
       "verity_disc", () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("verity", "verity_disc"))
    );

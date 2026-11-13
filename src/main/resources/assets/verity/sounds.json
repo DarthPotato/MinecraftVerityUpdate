@@ -62,18 +62,6 @@
       }
     ]
   },
-  "intro_video_audio": {
-    "subtitle": "sounds.verity.intro_cinematic",
-    "sounds": [
-      "verity:intro_video_audio"
-    ]
-  },
-  "chase": {
-    "subtitle": "sounds.verity.chase",
-    "sounds": [
-      "verity:chase"
-    ]
-  },
   "bone_snap": {
     "category": "hostile",
     "sounds": [
@@ -84,12 +72,6 @@
     "category": "hostile",
     "sounds": [
       "verity:bone_break"
-    ]
-  },
-  "jumpscare": {
-    "category": "hostile",
-    "sounds": [
-      "verity:jumpscare"
     ]
   },
   "verity_edit_disc": {
