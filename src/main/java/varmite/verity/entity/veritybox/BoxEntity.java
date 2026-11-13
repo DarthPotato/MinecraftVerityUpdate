@@ -6,6 +6,7 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -24,13 +25,13 @@ import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.animation.AnimationController;
-import software.bernie.geckolib.animation.RawAnimation;
-import software.bernie.geckolib.animation.AnimatableManager.ControllerRegistrar;
-import software.bernie.geckolib.animation.PlayState;
-import software.bernie.geckolib.util.GeckoLibUtil;
+import com.geckolib.animatable.GeoEntity;
+import com.geckolib.animatable.instance.AnimatableInstanceCache;
+import com.geckolib.animation.AnimationController;
+import com.geckolib.animation.RawAnimation;
+import com.geckolib.animatable.manager.AnimatableManager.ControllerRegistrar;
+import com.geckolib.animation.object.PlayState;
+import com.geckolib.util.GeckoLibUtil;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.triggers.ModTriggers;
 
@@ -107,7 +108,7 @@ public class BoxEntity extends LivingEntity implements GeoEntity {
 
    public void triggerOpen() {
       this.triggerAnim("action_controller", "open");
-      MinecraftServer server = this.getServer();
+      MinecraftServer server = this.level().getServer();
 
       for (ServerPlayer player : server.getPlayerList().getPlayers()) {
          ModTriggers.UNBOX_VERITY_TRIGGER.get().trigger(player);
@@ -117,13 +118,8 @@ public class BoxEntity extends LivingEntity implements GeoEntity {
    }
 
    @Override
-   public boolean isInvulnerableTo(DamageSource source) {
+   public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
       return !source.is(DamageTypes.FELL_OUT_OF_WORLD) && !source.is(DamageTypes.GENERIC_KILL);
-   }
-
-   @Override
-   public Iterable<ItemStack> getArmorSlots() {
-      return Collections.singleton(ItemStack.EMPTY);
    }
 
    @Override
@@ -142,11 +138,8 @@ public class BoxEntity extends LivingEntity implements GeoEntity {
 
    @Override
    public void registerControllers(ControllerRegistrar controllers) {
-      controllers.add(new AnimationController<>(this, "idle_controller", 5, state -> {
-         state.getController().setAnimation(RawAnimation.begin().thenLoop("hover"));
-         return PlayState.CONTINUE;
-      }));
-      AnimationController<BoxEntity> actionController = new AnimationController<>(this, "action_controller", 0, state -> PlayState.STOP);
+      controllers.add(new AnimationController<BoxEntity>("idle_controller", 5, state -> state.setAndContinue(RawAnimation.begin().thenLoop("hover"))));
+      AnimationController<BoxEntity> actionController = new AnimationController<>("action_controller", 0, state -> PlayState.STOP);
       actionController.triggerableAnim("open", RawAnimation.begin().thenPlayAndHold("open"));
       controllers.add(actionController);
    }

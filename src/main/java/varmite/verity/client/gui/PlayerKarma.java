@@ -1,10 +1,10 @@
 package varmite.verity.client.gui;
 
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.neoforged.neoforge.common.util.INBTSerializable;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.neoforged.neoforge.common.util.ValueIOSerializable;
 
-public class PlayerKarma implements INBTSerializable<CompoundTag> {
+public class PlayerKarma implements ValueIOSerializable {
    private int karma;
    private final int MIN_KARMA = 0;
    private final int MAX_KARMA = 20;
@@ -29,23 +29,13 @@ public class PlayerKarma implements INBTSerializable<CompoundTag> {
       this.karma = source.karma;
    }
 
-   public void saveNBTData(CompoundTag nbt) {
-      nbt.putInt("player_karma", this.karma);
-   }
-
-   public void loadNBTData(CompoundTag nbt) {
-      this.karma = nbt.getInt("player_karma");
+   @Override
+   public void serialize(ValueOutput output) {
+      output.putInt("player_karma", this.karma);
    }
 
    @Override
-   public CompoundTag serializeNBT(HolderLookup.Provider provider) {
-      CompoundTag nbt = new CompoundTag();
-      this.saveNBTData(nbt);
-      return nbt;
-   }
-
-   @Override
-   public void deserializeNBT(HolderLookup.Provider provider, CompoundTag nbt) {
-      this.loadNBTData(nbt);
+   public void deserialize(ValueInput input) {
+      this.karma = input.getIntOr("player_karma", 0);
    }
 }

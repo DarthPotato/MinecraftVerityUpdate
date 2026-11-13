@@ -13,7 +13,7 @@ import varmite.verity.event.ModEvents;
 public class ChangeKarmaCommand {
    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
       dispatcher.register(
-         (LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("changekarma").requires(source -> source.hasPermission(2)))
+         (LiteralArgumentBuilder)((LiteralArgumentBuilder)Commands.literal("changekarma").requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS)))
             .then(
                Commands.argument("karma", IntegerArgumentType.integer(0, 20))
                   .executes(

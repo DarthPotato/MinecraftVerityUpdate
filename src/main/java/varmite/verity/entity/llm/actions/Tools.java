@@ -158,7 +158,7 @@ public class Tools {
       return this.serverCall(() -> {
          List<String> items = new ArrayList<>();
 
-         for (ItemStack inventoryStack : this.player.getInventory().items) {
+         for (ItemStack inventoryStack : this.player.getInventory().getNonEquipmentItems()) {
             if (!inventoryStack.isEmpty()) {
                items.add(inventoryStack.getCount() + "x " + inventoryStack.getHoverName().getString());
             }
@@ -298,7 +298,7 @@ public class Tools {
    String play_sound(String sound_id) {
       return this.serverCall(() -> {
          Identifier soundLoc = Identifier.parse(sound_id);
-         SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundLoc);
+         SoundEvent sound = BuiltInRegistries.SOUND_EVENT.getValue(soundLoc);
          if (sound != null && VerityState.verityEntity != null) {
             ModTriggers.PLAY_SOUND_TRIGGER.get().trigger(this.player);
             this.level.playSound((Player)null, VerityState.verityEntity.blockPosition(), sound, SoundSource.NEUTRAL, 1.0F, 1.0F);
@@ -345,7 +345,7 @@ public class Tools {
    @Tool("Stop playing your favorite song")
    String stop_favorite_song() {
       return this.serverCall(() -> {
-         MinecraftServer server = this.player.getServer();
+         MinecraftServer server = this.server;
          Identifier soundToStop = Identifier.fromNamespaceAndPath("verity", "verity_disc");
          ClientboundStopSoundPacket stopSoundPacket = new ClientboundStopSoundPacket(soundToStop, SoundSource.VOICE);
          server.getPlayerList().broadcastAll(stopSoundPacket);
@@ -500,7 +500,7 @@ public class Tools {
       return this.serverCall(() -> {
          UUID standInId = WorldSpawnData.get(this.level).activeDemon;
          if (standInId != null && this.level.getEntity(standInId) instanceof LivingEntity standIn) {
-            standIn.kill();
+            standIn.kill(this.level);
          }
 
          return "Transformed back to normal. Forgive the player";

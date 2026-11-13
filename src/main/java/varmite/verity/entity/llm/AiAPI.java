@@ -1,5 +1,6 @@
 package varmite.verity.entity.llm;
 
+import java.net.URI;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -14,7 +15,6 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.ClickEvent.Action;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -118,10 +118,10 @@ public class AiAPI {
          tools.player = player;
          if (verity != null) {
             tools.level = (ServerLevel)verity.level();
-            tools.server = verity.getServer();
+            tools.server = verity.level().getServer();
          } else if (player != null) {
             tools.level = player.level();
-            tools.server = player.getServer();
+            tools.server = player.level().getServer();
          }
 
          String GLOBAL_MEMORY_ID = "verity-chat-memory";
@@ -191,7 +191,7 @@ public class AiAPI {
             Verity.LOGGER.error("[Verity AI] Request failed: {}", e.toString());
          }
 
-         MinecraftServer server = player == null ? null : player.getServer();
+         MinecraftServer server = player == null ? null : player.level().getServer();
          if (server != null) {
             server.execute(
                () -> {
@@ -199,7 +199,7 @@ public class AiAPI {
                   player.sendSystemMessage(
                      Component.literal("Setup Tutorial")
                         .withStyle(ChatFormatting.AQUA)
-                        .withStyle(Style.EMPTY.withClickEvent(new ClickEvent(Action.OPEN_URL, "https://youtu.be/O3pSCBvJ_i0")).withUnderlined(true))
+                        .withStyle(Style.EMPTY.withClickEvent(new ClickEvent.OpenUrl(URI.create("https://youtu.be/O3pSCBvJ_i0"))).withUnderlined(true))
                   );
                }
             );

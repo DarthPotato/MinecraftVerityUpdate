@@ -12,6 +12,7 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -67,7 +68,7 @@ public class VerityItem extends Item {
       if (!entity.level().isClientSide()) {
          if (entity.onGround()) {
             CompoundTag data = entity.getPersistentData();
-            int groundTicks = data.getInt("VerityGroundTicks");
+            int groundTicks = data.getIntOr("VerityGroundTicks", 0);
             data.putInt("VerityGroundTicks", ++groundTicks);
             if (groundTicks >= 20) {
                ServerLevel level = (ServerLevel)entity.level();
@@ -77,12 +78,12 @@ public class VerityItem extends Item {
                   variantToSpawn = StackData.getString(stack, "VerityVariant");
                }
 
-               VerityEntity spawnedEntity = ModEntities.VERITY_ENTITY.get().create(level);
+               VerityEntity spawnedEntity = ModEntities.VERITY_ENTITY.get().create(level, EntitySpawnReason.MOB_SUMMONED);
                if (spawnedEntity != null) {
                   spawnedEntity.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
                   spawnedEntity.setVariant(variantToSpawn);
                   if (stack.has(DataComponents.CUSTOM_DATA)) {
-                     spawnedEntity.readAdditionalSaveData(StackData.copy(stack));
+                     spawnedEntity.loadFromTag(StackData.copy(stack));
                   }
 
                   level.addFreshEntity(spawnedEntity);
@@ -111,7 +112,7 @@ public class VerityItem extends Item {
          if (itemEntity.level() instanceof ServerLevel serverLevel) {
             BlockPos itemPos = itemEntity.blockPosition();
             BlockPos safePos = this.findClosestSafeSpawnLocation(serverLevel, itemPos);
-            VerityEntity spawnedEntity = ModEntities.VERITY_ENTITY.get().create(serverLevel);
+            VerityEntity spawnedEntity = ModEntities.VERITY_ENTITY.get().create(serverLevel, EntitySpawnReason.MOB_SUMMONED);
             if (spawnedEntity != null) {
                spawnedEntity.snapTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, 0.0F, 0.0F);
                serverLevel.addFreshEntity(spawnedEntity);
@@ -125,7 +126,7 @@ public class VerityItem extends Item {
                   return;
                }
 
-               spawnedEntity.getServer()
+               serverLevel.getServer()
                   .getPlayerList()
                   .broadcastSystemMessage(Component.literal("<%s> §4DO NOT DO THAT.".formatted(VerityConfig.VERITY_CUSTOM_NAME.get())), false);
             }
@@ -167,7 +168,7 @@ public class VerityItem extends Item {
          for (int y = -3; y <= 3; y++) {
             for (int z = -3; z <= 3; z++) {
                BlockPos checkPos = startPos.offset(x, y, z);
-               boolean hasSolidFloor = level.getBlockState(checkPos.below()).isSolidRender(level, checkPos.below());
+               boolean hasSolidFloor = level.getBlockState(checkPos.below()).isSolidRender();
                boolean isFeetEmpty = level.getBlockState(checkPos).getCollisionShape(level, checkPos).isEmpty() && level.getFluidState(checkPos).isEmpty();
                boolean isHeadEmpty = level.getBlockState(checkPos.above()).getCollisionShape(level, checkPos.above()).isEmpty()
                   && level.getFluidState(checkPos.above()).isEmpty();

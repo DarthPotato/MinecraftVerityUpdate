@@ -1,5 +1,7 @@
 package varmite.verity.event;
 
+import java.net.URI;
+import net.minecraft.world.item.component.SwingAnimation;
 import varmite.verity.environment.items.StackData;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,7 +18,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
-import net.minecraft.network.chat.ClickEvent.Action;
 import net.minecraft.network.protocol.game.ClientboundStopSoundPacket;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
@@ -125,8 +126,8 @@ public class ModEvents {
             boolean foundJson = false;
 
             for (int i = 0; i < data.chatHistory.size(); i++) {
-               CompoundTag messageTag = data.chatHistory.getCompound(i);
-               String content = messageTag.getString("content");
+               CompoundTag messageTag = data.chatHistory.getCompoundOrEmpty(i);
+               String content = messageTag.getStringOr("content", "");
                if (content.toLowerCase().contains("json")) {
                   foundJson = true;
                   break;
@@ -159,7 +160,7 @@ public class ModEvents {
             String[] messages = new String[]{"IT BURNS", "GET ME OUT OF HERE", "HELP ME IT BURNS", "AGH IT BURNS", "AGH"};
             Random rand = new Random();
             String answer = messages[rand.nextInt(messages.length)];
-            verity.getServer()
+            serverLevel.getServer()
                .execute(
                   () -> {
                      if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved()) {
@@ -168,7 +169,7 @@ public class ModEvents {
                      }
 
                      updateAndSyncKarma(serverLevel, -2.0F);
-                     verity.getServer().getPlayerList().broadcastSystemMessage(Component.literal("<Verity> " + answer), false);
+                     serverLevel.getServer().getPlayerList().broadcastSystemMessage(Component.literal("<Verity> " + answer), false);
                   }
                );
          }
@@ -224,9 +225,9 @@ public class ModEvents {
 
                stack.shrink(1);
                Vec3 launchVelocity = player.getLookAngle().normalize().scale(1.5);
-               VerityEntity newVerity = ModEntities.VERITY_ENTITY.get().create(player.level());
+               VerityEntity newVerity = ModEntities.VERITY_ENTITY.get().create(player.level(), EntitySpawnReason.MOB_SUMMONED);
                if (newVerity != null) {
-                  newVerity.snapTo(player.blockPosition().offset(0, 1, 0).getCenter());
+                  newVerity.snapTo(Vec3.atCenterOf(player.blockPosition().offset(0, 1, 0)));
                   newVerity.setVariant(variantToSpawn);
                   newVerity.getPersistentData().putBoolean("WasThrown", true);
                   newVerity.setOwnerUUID(player.getUUID());
@@ -253,7 +254,7 @@ public class ModEvents {
             Player p = event.getEntity();
             boolean isNowOn = !StackData.getBoolean(stack, "FlashlightOn");
             StackData.update(stack, tag -> tag.putBoolean("FlashlightOn", isNowOn));
-            p.swing(event.getHand(), true);
+            p.swing(event.getHand(), SwingAnimation.DEFAULT, true);
             if (isNowOn) {
                p.level().playSound((Player)null, p.blockPosition(), SoundEvents.BAMBOO_WOOD_BUTTON_CLICK_ON, SoundSource.PLAYERS, 1.0F, 1.0F);
             } else {
@@ -389,7 +390,7 @@ public class ModEvents {
          Entity standIn = standInId == null ? null : ((ServerLevel)p.level()).getEntity(standInId);
          if (standIn != null && standIn.distanceToSqr(p) < 4096.0) {
             event.setProblem(BedSleepingProblem.OTHER_PROBLEM);
-            p.displayClientMessage(Component.literal("You cannot rest now, Verity is nearby..."), true);
+            p.sendOverlayMessage(Component.literal("You cannot rest now, Verity is nearby..."));
          }
       }
    }
@@ -428,7 +429,7 @@ public class ModEvents {
             event.setCanceled(true);
             event.setCancellationResult(InteractionResult.SUCCESS);
             if (!event.getLevel().isClientSide()) {
-               MinecraftServer server = vEntity.getServer();
+               MinecraftServer server = vEntity.level().getServer();
                if (server != null) {
                   Identifier soundToStop = Identifier.fromNamespaceAndPath("verity", "verity_disc");
                   ClientboundStopSoundPacket stopSoundPacket = new ClientboundStopSoundPacket(soundToStop, SoundSource.VOICE);
@@ -436,8 +437,7 @@ public class ModEvents {
                }
 
                ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
-               CompoundTag itemNbt = new CompoundTag();
-               vEntity.addAdditionalSaveData(itemNbt);
+               CompoundTag itemNbt = vEntity.saveToTag();
                itemNbt.putString("VerityVariant", vEntity.getVariant());
                itemNbt.putString("VerityName", VerityConfig.VERITY_CUSTOM_NAME.get());
                String name = VerityConfig.VERITY_CUSTOM_NAME.get();
@@ -451,7 +451,7 @@ public class ModEvents {
                VerityState.hasSpawned = false;
                vEntity.level().playSound((Player)null, vEntity.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1.0F, 1.0F);
                player.setItemInHand(hand, stack);
-               player.swing(hand, true);
+               player.swing(hand, SwingAnimation.DEFAULT, true);
                vEntity.level().playSound((Player)null, vEntity.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1.0F, 1.0F);
             }
          } else if (event.getTarget() instanceof BoxEntity bEntity) {
@@ -463,7 +463,7 @@ public class ModEvents {
             event.setCancellationResult(InteractionResult.SUCCESS);
             if (!event.getLevel().isClientSide()) {
                bEntity.triggerOpen();
-               player.swing(hand, true);
+               player.swing(hand, SwingAnimation.DEFAULT, true);
                bEntity.getEntityData().set(BoxEntity.HAS_CLICKED, true);
                player.level().playSound((Player)null, bEntity.blockPosition(), ModSounds.BOX_CLICK.get(), SoundSource.BLOCKS, 0.7F, 1.0F);
                schedule(
@@ -525,8 +525,8 @@ public class ModEvents {
    public static void onPlayerFirstJoin(PlayerLoggedInEvent event) {
       Player player = event.getEntity();
       if (player.level() instanceof ServerLevel level) {
-         boolean hasFlashlight = player.getInventory().items.stream().anyMatch(stack -> stack.is(ModItems.FLASHLIGHT.get()))
-            || player.getInventory().offhand.stream().anyMatch(stack -> stack.is(ModItems.FLASHLIGHT.get()));
+         boolean hasFlashlight = player.getInventory().getNonEquipmentItems().stream().anyMatch(stack -> stack.is(ModItems.FLASHLIGHT.get()))
+            || player.getOffhandItem().is(ModItems.FLASHLIGHT.get());
          if (!hasFlashlight) {
             player.getInventory().add(new ItemStack(ModItems.FLASHLIGHT.get()));
          }
@@ -538,7 +538,7 @@ public class ModEvents {
                player.sendSystemMessage(Component.literal("Need help setting up this mod? Watch this tutorial."));
                Component message = Component.literal("Setup Tutorial")
                   .withStyle(ChatFormatting.AQUA)
-                  .withStyle(Style.EMPTY.withClickEvent(new ClickEvent(Action.OPEN_URL, "https://youtu.be/O3pSCBvJ_i0")).withUnderlined(true));
+                  .withStyle(Style.EMPTY.withClickEvent(new ClickEvent.OpenUrl(URI.create("https://youtu.be/O3pSCBvJ_i0"))).withUnderlined(true));
                player.sendSystemMessage(message);
                BlockPos safeSpawnPos = findNearestLand(level, player.blockPosition());
                ModEntities.BOX_ENTITY.get().spawn(level, (ItemStack)null, null, safeSpawnPos, EntitySpawnReason.MOB_SUMMONED, true, true);
@@ -553,12 +553,11 @@ public class ModEvents {
    public static void onPlayerRespawn(PlayerRespawnEvent event) {
       if (!event.getEntity().level().isClientSide()) {
          Player player = event.getEntity();
-         if (!player.level().getGameRules().getBoolean(GameRules.KEEP_INVENTORY)) {
+         if (!((ServerLevel)player.level()).getGameRules().get(GameRules.KEEP_INVENTORY)) {
             VerityEntity verity = VerityState.verityEntity;
             if (verity != null && !verity.isRemoved() && verity.getOwnerUUID().isPresent() && player.getUUID().equals(verity.getOwnerUUID().get())) {
                ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
-               CompoundTag itemNbt = new CompoundTag();
-               verity.addAdditionalSaveData(itemNbt);
+               CompoundTag itemNbt = verity.saveToTag();
                itemNbt.putString("VerityVariant", verity.getVariant());
                itemNbt.putString("VerityName", VerityConfig.VERITY_CUSTOM_NAME.get());
                String name = VerityConfig.VERITY_CUSTOM_NAME.get();
@@ -573,8 +572,8 @@ public class ModEvents {
                verity.discard();
             }
 
-            boolean hasFlashlight = player.getInventory().items.stream().anyMatch(stack -> stack.is(ModItems.FLASHLIGHT.get()))
-               || player.getInventory().offhand.stream().anyMatch(stack -> stack.is(ModItems.FLASHLIGHT.get()));
+            boolean hasFlashlight = player.getInventory().getNonEquipmentItems().stream().anyMatch(stack -> stack.is(ModItems.FLASHLIGHT.get()))
+            || player.getOffhandItem().is(ModItems.FLASHLIGHT.get());
             if (!hasFlashlight) {
                player.getInventory().add(new ItemStack(ModItems.FLASHLIGHT.get()));
             }
@@ -629,7 +628,7 @@ public class ModEvents {
                variantToSpawn = StackData.getString(stack, "VerityVariant");
             }
 
-            player.swing(hand, true);
+            player.swing(hand, SwingAnimation.DEFAULT, true);
             stack.shrink(1);
             player.level().playSound((Player)null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1.0F, 0.8F);
             VerityEntity spawnedVerity = ModEntities.VERITY_ENTITY.get().spawn(level, spawnPos, EntitySpawnReason.MOB_SUMMONED);
@@ -650,7 +649,7 @@ public class ModEvents {
          return false;
       }
 
-      boolean inMain = player.getInventory().items.stream().anyMatch(stack -> !stack.isEmpty() && stack.is(ModItems.VERITY_ITEM.get()));
+      boolean inMain = player.getInventory().getNonEquipmentItems().stream().anyMatch(stack -> !stack.isEmpty() && stack.is(ModItems.VERITY_ITEM.get()));
       return inMain ? true : !player.getOffhandItem().isEmpty() && player.getOffhandItem().is(ModItems.VERITY_ITEM.get());
    }
 

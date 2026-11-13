@@ -9,6 +9,7 @@ import java.util.Random;
 import java.util.UUID;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -25,7 +26,10 @@ import net.minecraft.world.DifficultyInstance;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.entity.EntityReference;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
@@ -42,6 +46,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
@@ -62,7 +70,9 @@ public class VerityEntity extends PathfinderMob {
    public static final EntityDataAccessor<Boolean> IS_TALKING = SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.BOOLEAN);
    private static final EntityDataAccessor<Integer> TALK_FRAME = SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.INT);
    public static final EntityDataAccessor<Integer> BOUNCE_START_TICK = SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.INT);
-   private static final EntityDataAccessor<Optional<UUID>> OWNER_UUID = SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+   private static final EntityDataAccessor<Optional<EntityReference<LivingEntity>>> OWNER_UUID = SynchedEntityData.defineId(
+      VerityEntity.class, EntityDataSerializers.OPTIONAL_LIVING_ENTITY_REFERENCE
+   );
    public static final EntityDataAccessor<Boolean> IS_MONSTROUS = SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.BOOLEAN);
    public static final EntityDataAccessor<Integer> APOLOGY_COUNT = SynchedEntityData.defineId(VerityEntity.class, EntityDataSerializers.INT);
    private final List<UUID> playersWhoLooked = new ArrayList<>();
@@ -101,7 +111,6 @@ public class VerityEntity extends PathfinderMob {
 
    public VerityEntity(EntityType<? extends PathfinderMob> type, Level level) {
       super(type, level);
-      this.noCulling = true;
       this.setPersistenceRequired();
    }
 
@@ -123,15 +132,15 @@ public class VerityEntity extends PathfinderMob {
    }
 
    public Optional<UUID> getOwnerUUID() {
-      return this.entityData.get(OWNER_UUID);
+      return this.entityData.get(OWNER_UUID).map(EntityReference::getUUID);
    }
 
    public void setOwnerUUID(@Nullable UUID uuid) {
-      this.entityData.set(OWNER_UUID, Optional.ofNullable(uuid));
+      this.entityData.set(OWNER_UUID, Optional.ofNullable(uuid).map(EntityReference::<LivingEntity>of));
    }
 
    @Override
-   public SpawnGroupData finalizeSpawn(ServerLevelAccessor pLevel, DifficultyInstance pDifficulty, MobSpawnType pReason, @Nullable SpawnGroupData pSpawnData) {
+   public SpawnGroupData finalizeSpawn(ServerLevelAccessor pLevel, DifficultyInstance pDifficulty, EntitySpawnReason pReason, @Nullable SpawnGroupData pSpawnData) {
       Player closestPlayer = pLevel.getNearestPlayer(this, 10.0);
       if (closestPlayer != null) {
          this.setOwnerUUID(closestPlayer.getUUID());
@@ -142,7 +151,7 @@ public class VerityEntity extends PathfinderMob {
 
    public void triggerBoxDrop() {
       if (!this.level().isClientSide()) {
-         this.getServer().execute(() -> {
+         this.level().getServer().execute(() -> {
             WorldSpawnData data = WorldSpawnData.get((ServerLevel)this.level());
             data.verityKarma = 10.0F;
             data.setDirty();
@@ -162,7 +171,7 @@ public class VerityEntity extends PathfinderMob {
    }
 
    @Override
-   public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
+   public boolean causeFallDamage(double fallDistance, float multiplier, DamageSource source) {
       if (!this.level().isClientSide()) {
          if (fallDistance > 0.75F) {
             ModEvents.schedule(() -> {
@@ -204,7 +213,7 @@ public class VerityEntity extends PathfinderMob {
       this.goalSelector.addGoal(2, new LookAtPlayerGoal(this, Player.class, 3.0F) {
          @Override
          public boolean canUse() {
-            return this.mob.getPersistentData().getBoolean("WasThrown") ? false : super.canUse();
+            return this.mob.getPersistentData().getBooleanOr("WasThrown", false) ? false : super.canUse();
          }
       });
       this.goalSelector.addGoal(3, new RandomLookAroundGoal(this));
@@ -382,7 +391,7 @@ public class VerityEntity extends PathfinderMob {
       }
 
       BlockPos spawnPos = this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition());
-      Entity standIn = EntityType.WITHER.spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION);
+      Entity standIn = EntityTypes.WITHER.spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION);
       if (standIn == null) {
          return false;
       }
@@ -427,7 +436,7 @@ public class VerityEntity extends PathfinderMob {
          if (!(checkPos.distSqr(verityPos) < 256.0)) {
             if (isAboveGround) {
                BlockPos surfacePos = level.getHeightmapPos(Types.MOTION_BLOCKING_NO_LEAVES, checkPos);
-               if (level.getBlockState(surfacePos.below()).isSolidRender(level, surfacePos.below())) {
+               if (level.getBlockState(surfacePos.below()).isSolidRender()) {
                   return surfacePos;
                }
             } else {
@@ -435,7 +444,7 @@ public class VerityEntity extends PathfinderMob {
                   BlockPos cavePos = checkPos.offset(0, dy, 0);
                   if (level.isEmptyBlock(cavePos)
                      && level.isEmptyBlock(cavePos.above())
-                     && level.getBlockState(cavePos.below()).isSolidRender(level, cavePos.below())
+                     && level.getBlockState(cavePos.below()).isSolidRender()
                      && !level.canSeeSky(cavePos)) {
                      return cavePos;
                   }
@@ -578,56 +587,48 @@ public class VerityEntity extends PathfinderMob {
    }
 
    @Override
-   public void addAdditionalSaveData(CompoundTag tag) {
-      super.addAdditionalSaveData(tag);
-      tag.putString("TexturePath", this.getTexturePath());
-      tag.putBoolean("HasTriggeredDay2", this.hasTriggeredDay2);
-      tag.putInt("ConsecutiveBadMessages", this.consecutiveBadMessages);
-      tag.putBoolean("HasTransformed", this.hasTransformed);
-      tag.putBoolean("IsMonstrous", this.isMonstrous());
-      tag.putInt("ApologyCount", this.getApologyCount());
-      tag.putInt("PleadingTimer", this.pleadingTimer);
+   protected void addAdditionalSaveData(ValueOutput output) {
+      super.addAdditionalSaveData(output);
+      output.putString("TexturePath", this.getTexturePath());
+      output.putBoolean("HasTriggeredDay2", this.hasTriggeredDay2);
+      output.putInt("ConsecutiveBadMessages", this.consecutiveBadMessages);
+      output.putBoolean("HasTransformed", this.hasTransformed);
+      output.putBoolean("IsMonstrous", this.isMonstrous());
+      output.putInt("ApologyCount", this.getApologyCount());
+      output.putInt("PleadingTimer", this.pleadingTimer);
       if (this.getOwnerUUID().isPresent()) {
-         tag.putUUID("Owner", this.getOwnerUUID().get());
+         output.store("Owner", UUIDUtil.CODEC, this.getOwnerUUID().get());
       }
    }
 
    @Override
-   public void readAdditionalSaveData(CompoundTag tag) {
-      super.readAdditionalSaveData(tag);
-      String path = tag.getString("TexturePath");
-      if (path == null || path.isBlank() || path.contains("null.png")) {
+   protected void readAdditionalSaveData(ValueInput input) {
+      super.readAdditionalSaveData(input);
+      String path = input.getStringOr("TexturePath", "");
+      if (path.isBlank() || path.contains("null.png")) {
          path = "textures/entity/happy.png";
       }
 
       this.setTexturePath(path);
-      if (tag.contains("HasTriggeredDay2")) {
-         this.hasTriggeredDay2 = tag.getBoolean("HasTriggeredDay2");
-      }
+      this.hasTriggeredDay2 = input.getBooleanOr("HasTriggeredDay2", this.hasTriggeredDay2);
+      this.consecutiveBadMessages = input.getIntOr("ConsecutiveBadMessages", this.consecutiveBadMessages);
+      this.hasTransformed = input.getBooleanOr("HasTransformed", this.hasTransformed);
+      input.read("Owner", UUIDUtil.CODEC).ifPresent(this::setOwnerUUID);
+      this.setMonstrous(input.getBooleanOr("IsMonstrous", this.isMonstrous()));
+      this.setApologyCount(input.getIntOr("ApologyCount", this.getApologyCount()));
+      this.pleadingTimer = input.getIntOr("PleadingTimer", this.pleadingTimer);
+   }
 
-      if (tag.contains("ConsecutiveBadMessages")) {
-         this.consecutiveBadMessages = tag.getInt("ConsecutiveBadMessages");
-      }
+   /** Verity's saved state as a plain tag, for carrying it inside the Verity item. */
+   public CompoundTag saveToTag() {
+      TagValueOutput output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, this.registryAccess());
+      this.addAdditionalSaveData(output);
+      return output.buildResult();
+   }
 
-      if (tag.contains("HasTransformed")) {
-         this.hasTransformed = tag.getBoolean("HasTransformed");
-      }
-
-      if (tag.hasUUID("Owner")) {
-         this.setOwnerUUID(tag.getUUID("Owner"));
-      }
-
-      if (tag.contains("IsMonstrous")) {
-         this.setMonstrous(tag.getBoolean("IsMonstrous"));
-      }
-
-      if (tag.contains("ApologyCount")) {
-         this.setApologyCount(tag.getInt("ApologyCount"));
-      }
-
-      if (tag.contains("PleadingTimer")) {
-         this.pleadingTimer = tag.getInt("PleadingTimer");
-      }
+   /** Restores what {@link #saveToTag()} wrote. */
+   public void loadFromTag(CompoundTag tag) {
+      this.readAdditionalSaveData(TagValueInput.create(ProblemReporter.DISCARDING, this.registryAccess(), tag));
    }
 
    public boolean isPlayerLookingAtMe(Player player) {
@@ -653,7 +654,7 @@ public class VerityEntity extends PathfinderMob {
    }
 
    @Override
-   public boolean isInvulnerableTo(DamageSource source) {
+   public boolean isInvulnerableTo(ServerLevel level, DamageSource source) {
       return source.is(DamageTypeTags.BYPASSES_INVULNERABILITY)
          ? false
          : !source.is(DamageTypes.IN_WALL)
@@ -666,11 +667,6 @@ public class VerityEntity extends PathfinderMob {
 
    public static Builder createAttributes() {
       return LivingEntity.createLivingAttributes().add(Attributes.MAX_HEALTH, 20.0).add(Attributes.MOVEMENT_SPEED, 0.25).add(Attributes.FOLLOW_RANGE, 32.0);
-   }
-
-   @Override
-   public Iterable<ItemStack> getArmorSlots() {
-      return Collections.emptyList();
    }
 
    @Override

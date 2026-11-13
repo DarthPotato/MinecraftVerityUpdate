@@ -17,11 +17,11 @@ public final class StackData {
    }
 
    public static String getString(ItemStack stack, String key) {
-      return copy(stack).getString(key);
+      return copy(stack).getStringOr(key, "");
    }
 
    public static boolean getBoolean(ItemStack stack, String key) {
-      return copy(stack).getBoolean(key);
+      return copy(stack).getBooleanOr(key, false);
    }
 
    /** A copy of the stack's data, empty if it has none. */

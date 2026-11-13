@@ -1,5 +1,6 @@
 package varmite.verity.event;
 
+import net.minecraft.world.entity.EntitySpawnReason;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +49,7 @@ public class VeritySpawnScheduler {
          level.destroyBlock(abovePos, true);
       }
 
-      Entity verity = ModEntities.VERITY_ENTITY.get().create(level);
+      Entity verity = ModEntities.VERITY_ENTITY.get().create(level, EntitySpawnReason.MOB_SUMMONED);
       if (verity != null) {
          verity.snapTo(chestPos.getX() + 0.5, chestPos.getY() + 1.0, chestPos.getZ() + 0.5, 0.0F, 0.0F);
          level.addFreshEntity(verity);

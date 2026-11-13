@@ -12,14 +12,14 @@ import net.minecraft.core.registries.Registries;
 import net.neoforged.neoforge.registries.DeferredHolder;
 
 public class ModItems {
-   public static final DeferredRegister<Item> ITEMS = DeferredRegister.create(Registries.ITEM, "verity");
-   public static final DeferredHolder<Item, Item> VERITY_ITEM = ITEMS.register("verity_item", () -> new VerityItem(new Properties()));
-   public static final DeferredHolder<Item, Item> FLASHLIGHT = ITEMS.register("flashlight", () -> new Item(new Properties()));
-   public static final DeferredHolder<Item, Item> VERITY_DISC = ITEMS.register(
-      "verity_disc", () -> new Item(new Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(song("verity_disc")))
+   public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems("verity");
+   public static final DeferredHolder<Item, Item> VERITY_ITEM = ITEMS.<Item>registerItem("verity_item", VerityItem::new);
+   public static final DeferredHolder<Item, Item> FLASHLIGHT = ITEMS.registerSimpleItem("flashlight");
+   public static final DeferredHolder<Item, Item> VERITY_DISC = ITEMS.registerSimpleItem(
+      "verity_disc", properties -> properties.stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(song("verity_disc"))
    );
-   public static final DeferredHolder<Item, Item> VERITY_EDIT_DISC = ITEMS.register(
-      "verity_edit_disc", () -> new Item(new Properties().stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(song("verity_edit_disc")))
+   public static final DeferredHolder<Item, Item> VERITY_EDIT_DISC = ITEMS.registerSimpleItem(
+      "verity_edit_disc", properties -> properties.stacksTo(1).rarity(Rarity.RARE).jukeboxPlayable(song("verity_edit_disc"))
    );
 
    /** The discs are data-driven since 1.21: see data/verity/jukebox_song. */

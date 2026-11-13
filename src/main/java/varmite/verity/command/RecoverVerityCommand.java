@@ -1,5 +1,6 @@
 package varmite.verity.command;
 
+import net.minecraft.world.entity.EntitySpawnReason;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import net.minecraft.commands.CommandSourceStack;
@@ -45,7 +46,7 @@ public class RecoverVerityCommand {
                return 0;
             } else {
                lastUseTime = now;
-               VerityEntity verity = ModEntities.VERITY_ENTITY.get().create(level);
+               VerityEntity verity = ModEntities.VERITY_ENTITY.get().create(level, EntitySpawnReason.MOB_SUMMONED);
                if (verity == null) {
                   player.sendSystemMessage(Component.literal("§cFailed to recover Verity."));
                   return 0;

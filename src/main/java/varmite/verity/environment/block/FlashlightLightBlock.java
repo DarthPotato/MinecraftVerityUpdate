@@ -3,7 +3,9 @@ package varmite.verity.environment.block;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SimpleWaterloggedBlock;
@@ -22,8 +24,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 public class FlashlightLightBlock extends Block implements SimpleWaterloggedBlock {
    public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
-   public FlashlightLightBlock() {
-      super(Properties.of().replaceable().noCollision().noOcclusion().noLootTable().pushReaction(PushReaction.POPPED).lightLevel(state -> 15));
+   public FlashlightLightBlock(Properties properties) {
+      super(properties.replaceable().noCollision().noOcclusion().noLootTable().pushReaction(PushReaction.POPPED).lightLevel(state -> 15));
       this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
    }
 
@@ -33,31 +35,40 @@ public class FlashlightLightBlock extends Block implements SimpleWaterloggedBloc
    }
 
    @Override
-   public FluidState getFluidState(BlockState state) {
+   protected FluidState getFluidState(BlockState state) {
       return state.getValue(WATERLOGGED) ? Fluids.WATER.getSource(false) : super.getFluidState(state);
    }
 
    @Override
-   public BlockState updateShape(BlockState state, Direction direction, BlockState neighborState, LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+   protected BlockState updateShape(
+      BlockState state,
+      LevelReader level,
+      ScheduledTickAccess ticks,
+      BlockPos pos,
+      Direction directionToNeighbour,
+      BlockPos neighbourPos,
+      BlockState neighbourState,
+      RandomSource random
+   ) {
       if (state.getValue(WATERLOGGED)) {
-         level.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+         ticks.scheduleTick(pos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
       }
 
-      return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+      return super.updateShape(state, level, ticks, pos, directionToNeighbour, neighbourPos, neighbourState, random);
    }
 
    @Override
-   public RenderShape getRenderShape(BlockState state) {
+   protected RenderShape getRenderShape(BlockState state) {
       return RenderShape.INVISIBLE;
    }
 
    @Override
-   public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+   protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
       return Shapes.empty();
    }
 
    @Override
-   public boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+   protected boolean propagatesSkylightDown(BlockState state) {
       return true;
    }
 }

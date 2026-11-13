@@ -111,7 +111,7 @@ public class LLMUtility {
       ServerLevel serverLevel = (ServerLevel)player.level();
       ResourceKey<Structure> fortressKey = ResourceKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath("minecraft", "fortress"));
       Registry<Structure> registry = serverLevel.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-      Optional<Reference<Structure>> holderOptional = registry.getHolder(fortressKey);
+      Optional<Reference<Structure>> holderOptional = registry.get(fortressKey);
       if (holderOptional.isEmpty()) {
          return "Nether fortress structure is not registered or available.";
       }
@@ -133,7 +133,7 @@ public class LLMUtility {
       ServerLevel serverLevel = (ServerLevel)player.level();
       ResourceKey<Structure> fortressKey = ResourceKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath("verity", "thatmob_base"));
       Registry<Structure> registry = serverLevel.registryAccess().lookupOrThrow(Registries.STRUCTURE);
-      Optional<Reference<Structure>> holderOptional = registry.getHolder(fortressKey);
+      Optional<Reference<Structure>> holderOptional = registry.get(fortressKey);
       if (holderOptional.isEmpty()) {
          return "ThatMob Base structure is not registered or available.";
       }
@@ -158,7 +158,7 @@ public class LLMUtility {
       if (item_id.contains(":")) {
          Identifier loc = Identifier.tryParse(item_id);
          if (loc != null && BuiltInRegistries.ITEM.containsKey(loc)) {
-            foundItem = BuiltInRegistries.ITEM.get(loc);
+            foundItem = BuiltInRegistries.ITEM.getValue(loc);
          }
       }
 
@@ -166,7 +166,7 @@ public class LLMUtility {
          String searchTarget = item_id.contains(":") ? item_id.split(":")[1] : item_id;
 
          for (Entry<ResourceKey<Item>, Item> entry : BuiltInRegistries.ITEM.entrySet()) {
-            if (entry.getKey().location().getPath().equals(searchTarget)) {
+            if (entry.getKey().identifier().getPath().equals(searchTarget)) {
                foundItem = entry.getValue();
                break;
             }
