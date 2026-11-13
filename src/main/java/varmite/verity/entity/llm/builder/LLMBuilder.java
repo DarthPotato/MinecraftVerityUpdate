@@ -20,8 +20,8 @@ import varmite.verity.VerityConfig;
  * Builds the chat model from the free-form endpoint, API key and model in the config. Every
  * endpoint is treated as OpenAI-compatible, with one exception: when the endpoint turns out to
  * be an Ollama server, the request goes through Ollama's native API on the same server, because
- * its OpenAI-compatible route cannot set the context window and Verity's prompt plus tools need
- * more than Ollama's default.
+ * that is where the thinking toggle is a plain on/off switch. The context window is never set
+ * here: the Ollama server's own setting applies.
  */
 public class LLMBuilder {
    private static final Map<String, Boolean> OLLAMA_ENDPOINTS = new ConcurrentHashMap<>();
@@ -52,10 +52,9 @@ public class LLMBuilder {
 
    public ChatModel build() {
       if (isOllama(this.endpoint)) {
-         return ((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)OllamaChatModel.builder()
-                           .baseUrl(serverRoot(this.endpoint)))
-                        .modelName(this.model))
-                     .numCtx(16000))
+         return ((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)OllamaChatModel.builder()
+                        .baseUrl(serverRoot(this.endpoint)))
+                     .modelName(this.model))
                   .think(this.thinking))
                .temperature(0.8))
             .logResponses(VerityConfig.DEV_MODE.get()))

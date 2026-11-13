@@ -37,7 +37,7 @@
 - New `hostileEvent` setting (`OFF`, `MESSAGE`, `WITHER`, `DEMON`), default `MESSAGE`. It runs once per world; when it ends, `hostileResolved` is saved and Verity is back to normal for good. `OFF` also disables the day-based personality shift. `DEMON` behaves like `WITHER`.
 - `VerityEntity.hasTriggeredDay2` is still set at half of `dayCount` but no longer does anything.
 - AI: `aiProvider`, `aiModelPreset`, `useCustomAiModel` removed. `aiEndpoint` / `apiKey` / `aiModel` are always used (defaults `http://127.0.0.1:11434/v1`, `ollama`, `qwen3.5:9b`); `aiThink` defaults to false. Groq and OpenRouter keep their gpt-oss reasoning parameters, picked by endpoint host.
-- When the endpoint answers Ollama's `/api/version`, the request goes through Ollama's native API on the same server. Reason: the OpenAI-compatible route cannot set the context window, and the original relied on `num_ctx` 16000 for the prompt plus about 40 tools.
+- When the endpoint answers Ollama's `/api/version`, the request goes through Ollama's native API on the same server, where the thinking toggle is a plain on/off switch. The original's `num_ctx` 16000 is no longer sent (owner, 2026-11-13: this PC's Ollama runs 32k and the override would shrink it), so the Ollama server's own context setting applies. Verity's prompt plus about 40 tools needs well over Ollama's stock default, so any other Ollama host must raise its context length too.
 - fish.audio: new `FISH_AUDIO` voice provider with `fishApiKey` and `fishVoiceId`. `POST https://api.fish.audio/v1/tts`, bearer auth, JSON `text` / `reference_id` / `format: pcm` / `sample_rate: 44100`, played as 16-bit mono little-endian (byte order taken from JE Extra; fish.audio's docs do not state it).
 - Jar size: 258 MB to 179 MB.
 
@@ -61,7 +61,8 @@
 - The demon is wanted eventually: park the code instead of deleting it.
 - "Off" also switches off the day-based personality shift.
 - The hostile event happens once per world; the countdown does not start over.
+- `hostileEvent` default stays `MESSAGE`, with `WITHER` available (2026-11-13).
+- Do not override Ollama's context window (2026-11-13).
 
 **Open questions for the owner**
-- Default for `hostileEvent`: `MESSAGE` (current, harmless) or `WITHER` (destroys blocks near the player)?
 - Drop the now-unused Gemini/Mistral libraries from the jar?
