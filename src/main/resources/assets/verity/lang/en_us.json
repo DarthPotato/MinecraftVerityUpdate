@@ -10,6 +10,7 @@
 
   "key.verity.push_to_talk": "Talk to Verity (Push to talk)",
   "category.verity.keys": "Verity Mod",
+  "key.category.verity.keys": "Verity Mod",
   "key.verity.cycle_mic": "Cycle Selected Mic",
 
   "entity.verity.box": "Box",

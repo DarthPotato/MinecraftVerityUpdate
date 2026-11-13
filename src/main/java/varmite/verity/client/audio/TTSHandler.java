@@ -106,8 +106,7 @@ public class TTSHandler {
          return false;
       }
 
-      for (int i = 0; i < player.getInventory().items.size(); i++) {
-         ItemStack stack = player.getInventory().items.get(i);
+      for (ItemStack stack : player.getInventory().getNonEquipmentItems()) {
          if (!stack.isEmpty() && stack.is(ModItems.VERITY_ITEM.get())) {
             return true;
          }
@@ -301,7 +300,7 @@ public class TTSHandler {
                });
                Narrator osNarrator = Narrator.getNarrator();
                VerityState.isClientTalking = true;
-               osNarrator.say(text, true);
+               osNarrator.say(text, true, 1.0F);
                int wordCount = text.split("\\s+").length;
                int punctuationCount = text.replaceAll("[^.,!?]", "").length();
                long estimatedTimeMs = wordCount * 400L + punctuationCount * 300L;
@@ -521,14 +520,13 @@ public class TTSHandler {
                      Player localPlayer = Minecraft.getInstance().player;
                      if (localPlayer != null) {
                         if (errorBody.contains("rate_limit_exceeded")) {
-                           localPlayer.displayClientMessage(
-                              Component.literal("You ran out of TTS tokens! Try switching to Native TTS.").withStyle(ChatFormatting.RED), true
+                           localPlayer.sendOverlayMessage(
+                              Component.literal("You ran out of TTS tokens! Try switching to Native TTS.").withStyle(ChatFormatting.RED)
                            );
                         } else {
-                           localPlayer.displayClientMessage(
+                           localPlayer.sendOverlayMessage(
                               Component.literal("Verity's voice failed (" + response.statusCode() + "). See the log for details.")
-                                 .withStyle(ChatFormatting.RED),
-                              true
+                                 .withStyle(ChatFormatting.RED)
                            );
                         }
                      }

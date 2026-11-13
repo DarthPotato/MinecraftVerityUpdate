@@ -2,28 +2,47 @@ package varmite.verity.environment.items.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.special.SpecialModelRenderer;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
+import org.joml.Vector3f;
+import org.joml.Vector3fc;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.VerityState;
 import varmite.verity.entity.utils.SphereMesh;
 import varmite.verity.environment.items.VerityVariants;
 
-public class VerityItemRenderer extends BlockEntityWithoutLevelRenderer {
-   public VerityItemRenderer() {
-      super(Minecraft.getInstance().getBlockEntityRenderDispatcher(), Minecraft.getInstance().getEntityModels());
+/**
+ * Draws the Verity item as the same sphere as the entity. Item stacks cannot have a Java renderer
+ * attached any more; the item's model file (assets/verity/items/verity_item.json) asks for this
+ * renderer by id, once for first person and once for everything else.
+ */
+public class VerityItemRenderer implements SpecialModelRenderer<String> {
+   public static final Identifier ID = Identifier.fromNamespaceAndPath("verity", "verity");
+   private final boolean firstPerson;
+
+   public VerityItemRenderer(boolean firstPerson) {
+      this.firstPerson = firstPerson;
    }
 
    @Override
-   public void renderByItem(
-      ItemStack stack, ItemDisplayContext displayContext, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
-   ) {
-      String variant = VerityVariants.fromStack(stack);
+   public String extractArgument(ItemStack stack) {
+      return VerityVariants.fromStack(stack);
+   }
+
+   @Override
+   public void submit(String variant, PoseStack poseStack, SubmitNodeCollector collector, int packedLight, int packedOverlay, boolean hasFoil, int outlineColor) {
+      if (variant == null) {
+         variant = "happy";
+      }
+
       Identifier texture = VerityVariants.entityTexture(variant);
       if (VerityState.isClientTalking) {
          String talkingFile = switch (variant) {
@@ -41,7 +60,8 @@ public class VerityItemRenderer extends BlockEntityWithoutLevelRenderer {
       float stretchY = 1.0F;
       float stretchXZ = 1.0F;
       if (VerityState.isClientTalking) {
-         float talkTime = (Minecraft.getInstance().player != null ? Minecraft.getInstance().player.tickCount : 0) + Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
+         Minecraft minecraft = Minecraft.getInstance();
+         float talkTime = (minecraft.player != null ? minecraft.player.tickCount : 0) + minecraft.getDeltaTracker().getGameTimeDeltaPartialTick(true);
          stretchY = 1.0F + Mth.sin(talkTime * 0.6F) * 0.12F;
          stretchXZ = 1.0F + (1.0F - stretchY) * 0.5F;
       }
@@ -70,17 +90,45 @@ public class VerityItemRenderer extends BlockEntityWithoutLevelRenderer {
          poseStack.pushPose();
 
          try {
-            if (displayContext == ItemDisplayContext.FIRST_PERSON_RIGHT_HAND || displayContext == ItemDisplayContext.FIRST_PERSON_LEFT_HAND) {
+            if (this.firstPerson) {
                poseStack.translate(0.0, 0.25, 0.0);
-               poseStack.mulPose(Axis.YP.rotationDegrees(45.0F));
+               poseStack.rotate(Axis.YP.rotationDegrees(45.0F));
             }
 
-            SphereMesh.render(poseStack, bufferSource, texture, 0.5F, 16, 16, packedLight, r, g, b, a);
+            SphereMesh.render(poseStack, collector, texture, 0.5F, 16, 16, packedLight, r, g, b, a);
          } finally {
             poseStack.popPose();
          }
       } finally {
          poseStack.popPose();
+      }
+   }
+
+   @Override
+   public void getExtents(Consumer<Vector3fc> output) {
+      for (float x : new float[]{0.25F, 0.75F}) {
+         for (float y : new float[]{0.25F, 0.75F}) {
+            for (float z : new float[]{0.25F, 0.75F}) {
+               output.accept(new Vector3f(x, y, z));
+            }
+         }
+      }
+   }
+
+   public record Unbaked(boolean firstPerson) implements SpecialModelRenderer.Unbaked<String> {
+      public static final MapCodec<VerityItemRenderer.Unbaked> MAP_CODEC = RecordCodecBuilder.mapCodec(
+         instance -> instance.group(Codec.BOOL.optionalFieldOf("first_person", false).forGetter(VerityItemRenderer.Unbaked::firstPerson))
+            .apply(instance, VerityItemRenderer.Unbaked::new)
+      );
+
+      @Override
+      public MapCodec<VerityItemRenderer.Unbaked> type() {
+         return MAP_CODEC;
+      }
+
+      @Override
+      public SpecialModelRenderer<String> bake(SpecialModelRenderer.BakingContext context) {
+         return new VerityItemRenderer(this.firstPerson);
       }
    }
 }

@@ -349,6 +349,7 @@ public class ModEvents {
                   }
 
                   VerityState.verityEntity
+                     .level()
                      .getServer()
                      .getPlayerList()
                      .broadcastSystemMessage(

@@ -13,7 +13,7 @@ public class ConfigEventHandler {
    public static void onConfigReload(Reloading event) {
       if (Minecraft.getInstance().player != null) {
          if (event.getConfig().getSpec() == VerityConfig.SPEC) {
-            Minecraft.getInstance().execute(() -> Minecraft.getInstance().levelRenderer.allChanged());
+            Minecraft.getInstance().execute(() -> Minecraft.getInstance().levelExtractor.allChanged());
             System.out.println("Your mod config was saved and reloaded!");
          }
       }

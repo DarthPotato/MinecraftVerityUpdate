@@ -2,12 +2,11 @@ package varmite.verity.entity.utils;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
-import org.joml.Matrix4f;
 
 public final class SphereMesh {
    private static final float TEXTURE_SCALE = 1.3F;
@@ -16,9 +15,10 @@ public final class SphereMesh {
    private SphereMesh() {
    }
 
+   /** Queues the sphere with the pose stack as it is right now. */
    public static void render(
       PoseStack poseStack,
-      MultiBufferSource bufferSource,
+      SubmitNodeCollector collector,
       Identifier texture,
       float radius,
       int latitudes,
@@ -29,14 +29,12 @@ public final class SphereMesh {
       int b,
       int a
    ) {
-      VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(texture));
-      PoseStack.Pose last = poseStack.last();
-      drawSphere(last.pose(), last, consumer, radius, latitudes, longitudes, packedLight, r, g, b, a);
+      collector.submitCustomGeometry(
+         poseStack, RenderTypes.entityCutout(texture), (pose, consumer) -> drawSphere(pose, consumer, radius, latitudes, longitudes, packedLight, r, g, b, a)
+      );
    }
 
-   private static void drawSphere(
-      Matrix4f pose, PoseStack.Pose normal, VertexConsumer consumer, float radius, int latitudes, int longitudes, int light, int r, int g, int b, int a
-   ) {
+   private static void drawSphere(PoseStack.Pose pose, VertexConsumer consumer, float radius, int latitudes, int longitudes, int light, int r, int g, int b, int a) {
       for (int lat = 0; lat <= latitudes; lat++) {
          float theta1 = (float)(lat * Math.PI / latitudes);
          float theta2 = (float)((lat + 1) * Math.PI / latitudes);
@@ -44,17 +42,15 @@ public final class SphereMesh {
          for (int lon = 0; lon <= longitudes; lon++) {
             float phi1 = (float)(lon * 2 * Math.PI / longitudes);
             float phi2 = (float)((lon + 1) * 2 * Math.PI / longitudes);
-            addVertex(pose, normal, consumer, radius, theta1, phi1, light, r, g, b, a);
-            addVertex(pose, normal, consumer, radius, theta2, phi1, light, r, g, b, a);
-            addVertex(pose, normal, consumer, radius, theta2, phi2, light, r, g, b, a);
-            addVertex(pose, normal, consumer, radius, theta1, phi2, light, r, g, b, a);
+            addVertex(pose, consumer, radius, theta1, phi1, light, r, g, b, a);
+            addVertex(pose, consumer, radius, theta2, phi1, light, r, g, b, a);
+            addVertex(pose, consumer, radius, theta2, phi2, light, r, g, b, a);
+            addVertex(pose, consumer, radius, theta1, phi2, light, r, g, b, a);
          }
       }
    }
 
-   private static void addVertex(
-      Matrix4f pose, PoseStack.Pose normalPose, VertexConsumer consumer, float radius, float theta, float phi, int light, int r, int g, int b, int a
-   ) {
+   private static void addVertex(PoseStack.Pose pose, VertexConsumer consumer, float radius, float theta, float phi, int light, int r, int g, int b, int a) {
       float x = (float)(radius * Math.sin(theta) * Math.cos(phi));
       float y = (float)(radius * Math.cos(theta));
       float z = (float)(radius * Math.sin(theta) * Math.sin(phi));
@@ -71,6 +67,6 @@ public final class SphereMesh {
          .setUv(u, v)
          .setOverlay(OverlayTexture.NO_OVERLAY)
          .setLight(light)
-         .setNormal(normalPose, nx, ny, nz);
+         .setNormal(pose, nx, ny, nz);
    }
 }

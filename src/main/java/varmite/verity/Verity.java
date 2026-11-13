@@ -33,7 +33,8 @@ public class Verity {
    public static final Logger LOGGER = LogUtils.getLogger();
 
    public Verity(IEventBus modEventBus, ModContainer container) {
-      container.registerConfig(Type.COMMON, VerityConfig.SPEC);
+      // "common" configs are called LOCAL since 26.1; the file keeps its old name.
+      container.registerConfig(Type.LOCAL, VerityConfig.SPEC, "verity-common.toml");
       ModNetwork.register(modEventBus);
       modEventBus.addListener(this::commonSetup);
       NeoForge.EVENT_BUS.register(this);

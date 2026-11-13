@@ -4,7 +4,6 @@
   "package": "varmite.verity.environment.mixins",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "LightTextureMixin",
     "TitleScreenMixin"
   ],
   "injectors": {

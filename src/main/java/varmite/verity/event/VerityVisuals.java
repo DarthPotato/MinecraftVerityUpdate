@@ -16,8 +16,9 @@ public class VerityVisuals {
    public static void onComputeFogColor(ComputeFogColor event) {
       Level level = Minecraft.getInstance().level;
       if (VerityConfig.VERITY_FOG.get() && level != null && level.dimension() == Level.OVERWORLD) {
-         float partialTick = (float)event.getPartialTick();
-         float angle = level.getTimeOfDay(partialTick);
+         // The fraction-of-day helper is gone from Level; this is the same curve it used.
+         double dayFraction = Mth.frac(level.getOverworldClockTime() / 24000.0 - 0.25);
+         float angle = (float)(dayFraction * 2.0 + (0.5 - Math.cos(dayFraction * Math.PI) / 2.0)) / 3.0F;
          float brightness = Mth.cos(angle * (float) (Math.PI * 2)) * 2.0F + 0.5F;
          brightness = Mth.clamp(brightness, 0.0F, 1.0F);
          float targetRed = 0.55F;
@@ -35,7 +36,6 @@ public class VerityVisuals {
          float farDistance = event.getFarPlaneDistance();
          event.setNearPlaneDistance(farDistance * 0.1F);
          event.setFarPlaneDistance(farDistance * 0.75F);
-         event.setCanceled(true);
       }
    }
 }

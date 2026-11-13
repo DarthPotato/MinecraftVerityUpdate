@@ -1,7 +1,8 @@
 package varmite.verity.environment.mixins;
 
+import com.mojang.blaze3d.Blaze3D;
+import java.net.URI;
 import net.minecraft.ChatFormatting;
-import net.minecraft.util.Util;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -51,7 +52,7 @@ public abstract class TitleScreenMixin extends Screen {
 
       this.addRenderableWidget(
          Button.builder(
-               Component.literal("Mod by Varmite").withStyle(ChatFormatting.BOLD), button -> Util.getPlatform().openUri("https://www.youtube.com/@varmite")
+               Component.literal("Mod by Varmite").withStyle(ChatFormatting.BOLD), button -> Blaze3D.openUri(URI.create("https://www.youtube.com/@varmite"))
             )
             .bounds(varmiteX, varmiteY, varmiteWidth, 20)
             .build()

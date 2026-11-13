@@ -1,7 +1,7 @@
 package varmite.verity.client;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Post;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
@@ -19,7 +19,7 @@ public class AudioHudRenderer {
    public static void onRenderOverlay(Post event) {
       if (event.getName().equals(VanillaGuiLayers.HOTBAR)) {
          Minecraft mc = Minecraft.getInstance();
-         if (!mc.options.hideGui && mc.player != null) {
+         if (!mc.gui.hud.isHidden() && mc.player != null) {
             if (!VerityConfig.IMMERSIVE_MODE.get()) {
                boolean isRecording = KeybindHandler.isRecording();
                long currentTime = System.currentTimeMillis();
@@ -40,7 +40,7 @@ public class AudioHudRenderer {
                }
 
                if (!(alphaMultiplier <= 0.0F)) {
-                  GuiGraphics graphics = event.getGuiGraphics();
+                  GuiGraphicsExtractor graphics = event.getGuiGraphics();
                   int screenWidth = mc.getWindow().getGuiScaledWidth();
                   int screenHeight = mc.getWindow().getGuiScaledHeight();
                   int barWidth = 80;
@@ -66,8 +66,8 @@ public class AudioHudRenderer {
                   int textY = y - 10;
                   int textShadowColor = applyAlpha(-1442840576, alphaMultiplier);
                   int textMainColor = applyAlpha(-52429, alphaMultiplier);
-                  graphics.drawString(mc.font, statusText, textX + 1, textY + 1, textShadowColor, false);
-                  graphics.drawString(mc.font, statusText, textX, textY, textMainColor, false);
+                  graphics.text(mc.font, statusText, textX + 1, textY + 1, textShadowColor, false);
+                  graphics.text(mc.font, statusText, textX, textY, textMainColor, false);
                }
             }
          }

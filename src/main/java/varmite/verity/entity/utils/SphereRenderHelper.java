@@ -2,7 +2,7 @@ package varmite.verity.entity.utils;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.resources.Identifier;
 
 public final class SphereRenderHelper {
@@ -11,7 +11,7 @@ public final class SphereRenderHelper {
 
    public static void renderEntityBillboard(
       PoseStack poseStack,
-      MultiBufferSource bufferSource,
+      SubmitNodeCollector collector,
       Identifier texture,
       int packedLight,
       double entityX,
@@ -37,24 +37,24 @@ public final class SphereRenderHelper {
       double horizontal = Math.sqrt(dx * dx + dz * dz);
       float finalYaw = (float)Math.toDegrees(Math.atan2(dx, dz));
       float finalPitch = (float)(-Math.toDegrees(Math.atan2(dy, horizontal)));
-      poseStack.mulPose(Axis.YP.rotationDegrees(finalYaw));
-      poseStack.mulPose(Axis.XP.rotationDegrees(finalPitch));
-      poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+      poseStack.rotate(Axis.YP.rotationDegrees(finalYaw));
+      poseStack.rotate(Axis.XP.rotationDegrees(finalPitch));
+      poseStack.rotate(Axis.YP.rotationDegrees(90.0F));
       poseStack.scale(0.5F * stretchXZ, 0.5F * stretchY, 0.5F * stretchXZ);
       poseStack.translate(0.0, -0.25, 0.0);
       if (rollAngle != 0.0F) {
-         poseStack.mulPose(Axis.YP.rotationDegrees(-90.0F));
-         poseStack.mulPose(Axis.XP.rotationDegrees(-finalPitch));
-         poseStack.mulPose(Axis.YP.rotationDegrees(-finalYaw));
-         poseStack.mulPose(Axis.YP.rotationDegrees(-bodyYaw));
-         poseStack.mulPose(Axis.XP.rotationDegrees(rollAngle));
-         poseStack.mulPose(Axis.YP.rotationDegrees(bodyYaw));
-         poseStack.mulPose(Axis.YP.rotationDegrees(finalYaw));
-         poseStack.mulPose(Axis.XP.rotationDegrees(finalPitch));
-         poseStack.mulPose(Axis.YP.rotationDegrees(90.0F));
+         poseStack.rotate(Axis.YP.rotationDegrees(-90.0F));
+         poseStack.rotate(Axis.XP.rotationDegrees(-finalPitch));
+         poseStack.rotate(Axis.YP.rotationDegrees(-finalYaw));
+         poseStack.rotate(Axis.YP.rotationDegrees(-bodyYaw));
+         poseStack.rotate(Axis.XP.rotationDegrees(rollAngle));
+         poseStack.rotate(Axis.YP.rotationDegrees(bodyYaw));
+         poseStack.rotate(Axis.YP.rotationDegrees(finalYaw));
+         poseStack.rotate(Axis.XP.rotationDegrees(finalPitch));
+         poseStack.rotate(Axis.YP.rotationDegrees(90.0F));
       }
 
-      SphereMesh.render(poseStack, bufferSource, texture, 0.5F, 16, 16, packedLight, r, g, b, a);
+      SphereMesh.render(poseStack, collector, texture, 0.5F, 16, 16, packedLight, r, g, b, a);
       poseStack.popPose();
    }
 }

@@ -82,7 +82,7 @@ public class ModClientEvents {
                allToUpdate.addAll(currentSections);
 
                for (SectionPos section : allToUpdate) {
-                  mc.levelRenderer.setSectionDirty(section.x(), section.y(), section.z());
+                  mc.levelExtractor.setSectionDirty(section.x(), section.y(), section.z());
                }
 
                previousCenterBlocks = currentCenterBlocks;
