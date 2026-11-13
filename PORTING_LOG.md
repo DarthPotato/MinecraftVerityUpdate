@@ -107,3 +107,23 @@
 
 **Notes**
 - `scripts` used for testing set `run/server.properties` to `server-ip=127.0.0.1`, RCON on 25598 with a local password, port 25599. Clear `server-ip` and `enable-rcon` before friends connect to the dev server.
+
+### 2026-11-13 (later): jar on a real server, owner playtest, Ollama timeouts
+
+**Verified**
+- The built jar on a standalone NeoForge 21.1.266 server (GeckoLib in `mods/`): loads, entities and structures work, Verity's AI reply arrives.
+- The dev client joining that server: join, box at spawn, Verity summon, karma command, the `MESSAGE` hostile event at the day threshold, and the local TTS engine loading on the client.
+
+**Owner playtest (12:09 to 12:23)**
+- The game ran, but every Verity reply failed with "request timed out" (43 timeouts in `latest.log`).
+- Cause 1: Ollama had loaded the model on CPU only (0 of 33 layers on the GPU at 12:11) after its GPU check timed out at 11:56 and VRAM was short. It reloaded onto the GPU at 12:22.
+- Cause 2: with thinking on and Verity's full prompt, qwen3.5:9b writes 2,000 to 3,000 thinking tokens per reply, 35 to 55 s on the GPU, against a 60 s client limit with two automatic retries.
+
+**Changed**
+- Request timeout raised from the library's 60 s to 180 s. No automatic retry for Ollama.
+- `gradlew runClient -PjoinServer=host:port -PplayerName=Name` for multiplayer testing.
+- The 1.21.1 jar is copied to `dist/` (not in git).
+
+**Still open for Stage 1**
+- No owner playtest with working replies yet, so `playable-1.21.1` is not tagged. Voice, mic, config screen, karma bar, discs and flashlight are unverified on 1.21.1. Two clients on one server is untested.
+- Thinking on is reliable but slow; thinking off is fast but skipped tool calls in a small test. Owner's call.

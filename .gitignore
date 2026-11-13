@@ -24,3 +24,4 @@ run-data
 
 # All-Rights-Reserved / third-party input jars: never commit
 reference/*.jar
+dist

@@ -25,6 +25,8 @@ import varmite.verity.VerityConfig;
  */
 public class LLMBuilder {
    private static final Map<String, Boolean> OLLAMA_ENDPOINTS = new ConcurrentHashMap<>();
+   /** The library default is 60 s, which a thinking model on a home GPU regularly exceeds. */
+   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(180L);
    private String model;
    private String endpoint;
    private String apiKey;
@@ -52,19 +54,23 @@ public class LLMBuilder {
 
    public ChatModel build() {
       if (isOllama(this.endpoint)) {
-         return ((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)OllamaChatModel.builder()
-                        .baseUrl(serverRoot(this.endpoint)))
-                     .modelName(this.model))
-                  .think(this.thinking))
-               .temperature(0.8))
-            .logResponses(VerityConfig.DEV_MODE.get()))
-            .build();
+         OllamaChatModelBuilder ollama = OllamaChatModel.builder();
+         ollama.baseUrl(serverRoot(this.endpoint));
+         ollama.modelName(this.model);
+         ollama.think(this.thinking);
+         ollama.temperature(0.8);
+         ollama.timeout(REQUEST_TIMEOUT);
+         ollama.logResponses(VerityConfig.DEV_MODE.get());
+         // A local model that timed out will only time out again, while the player waits.
+         ollama.maxRetries(0);
+         return ollama.build();
       }
 
       OpenAiChatModelBuilder builder = OpenAiChatModel.builder()
          .baseUrl(this.endpoint)
          .modelName(this.model)
          .returnThinking(this.thinking)
+         .timeout(REQUEST_TIMEOUT)
          .logResponses(VerityConfig.DEV_MODE.get());
       if (this.apiKey != null && !this.apiKey.isBlank()) {
          builder.apiKey(this.apiKey);
