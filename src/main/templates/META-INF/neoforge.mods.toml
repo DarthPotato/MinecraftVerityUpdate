@@ -1,5 +1,4 @@
 modLoader="javafml"
-loaderVersion="${loader_version_range}"
 license="${mod_license}"
 issueTrackerURL="https://legacy.curseforge.com/minecraft/mc-mods/verity-je/settings/issues"
 
@@ -32,13 +31,13 @@ config="verity.mixins.json"
 [[dependencies.${mod_id}]]
     modId="yet_another_config_lib_v3"
     type="required"
-    versionRange="[3.8,)"
+    versionRange="[3.9,)"
     ordering="NONE"
     side="CLIENT"
 
 [[dependencies.${mod_id}]]
     modId="geckolib"
     type="required"
-    versionRange="[4.9,)"
+    versionRange="[5.5,)"
     ordering="NONE"
     side="BOTH"
