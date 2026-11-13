@@ -9,10 +9,7 @@ import javax.sound.sampled.TargetDataLine;
 import javax.sound.sampled.Mixer.Info;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.api.distmarker.OnlyIn;
 
-@OnlyIn(Dist.CLIENT)
 public class MicrophoneManager {
    private static final List<Info> AVAILABLE_MICS = new ArrayList<>();
    private static int currentIndex = -1;
