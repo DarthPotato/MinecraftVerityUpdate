@@ -43,6 +43,13 @@ neoForge {
     runs {
         client {
             client()
+            // Dev conveniences: gradlew runClient -PjoinServer=127.0.0.1:25599 -PplayerName=Friend
+            if (project.hasProperty('joinServer')) {
+                programArguments.addAll '--quickPlayMultiplayer', project.property('joinServer').toString()
+            }
+            if (project.hasProperty('playerName')) {
+                programArguments.addAll '--username', project.property('playerName').toString()
+            }
         }
         server {
             server()
