@@ -43,8 +43,19 @@ mixin {
     config 'verity.mixins.json'
 }
 
+jarJar.enable()
+
 repositories {
     mavenCentral()
+    // Jars that are not on Maven Central (see below), in Maven layout, no POMs.
+    maven {
+        url = uri('libs')
+        metadataSources { artifact() }
+        content {
+            includeGroup 'com.k2fsa.sherpa.onnx'
+            includeGroup 'varmite.verity.libs'
+        }
+    }
     // Owner's exact mod jars (GeckoLib, YACL) and the original Verity jar.
     flatDir { dir 'reference' }
 }
@@ -81,6 +92,14 @@ ext.bundledLibs = [
         'io.grpc:grpc-context:1.70.0',
         'io.opencensus:opencensus-api:0.31.1',
         'io.opencensus:opencensus-contrib-http-util:0.31.1',
+        // Not on Maven Central, served from libs/: sherpa-onnx 1.13.3 (GitHub release jars)
+        // and the original author's shaded google-genai 1.62.0 bundle. Copied unmodified
+        // from the original jar.
+        'com.k2fsa.sherpa.onnx:sherpa-onnx:1.13.3',
+        'com.k2fsa.sherpa.onnx:sherpa-onnx-native-lib-win-x64:1.13.3',
+        'com.k2fsa.sherpa.onnx:sherpa-onnx-native-lib-linux-x64:1.13.3',
+        'com.k2fsa.sherpa.onnx:sherpa-onnx-native-lib-osx-x64:1.13.3',
+        'varmite.verity.libs:genai-bundle:1.62.0',
 ]
 
 dependencies {
@@ -94,16 +113,15 @@ dependencies {
     implementation fg.deobf("blank:yet_another_config_lib_v3:3.6.6+1.20.1-forge")
 
     bundledLibs.each { coords ->
-        implementation(coords) { transitive = false }
+        def (g, a, v) = coords.split(':')
+        // minecraftLibrary puts non-mod libraries on the dev-run classpath as well.
+        minecraftLibrary(coords) { transitive = false }
+        // Same jar-in-jar metadata as the original: version range [v,), pinned to v.
+        jarJar(group: g, name: a, version: "[${v},)") {
+            transitive = false
+            jarJar.pin(it, v)
+        }
     }
-
-    // Not on Maven Central: sherpa-onnx 1.13.3 (GitHub release jars) and the original
-    // author's shaded google-genai 1.62.0 bundle. Copied unmodified from the original jar.
-    implementation files('libs/sherpa-onnx-v1.13.3.jar', 'libs/verity-genai-bundle-1.62.0.jar')
-    runtimeOnly files(
-            'libs/sherpa-onnx-native-lib-win-x64-v1.13.3.jar',
-            'libs/sherpa-onnx-native-lib-linux-x64-v1.13.3.jar',
-            'libs/sherpa-onnx-native-lib-osx-x64-v1.13.3.jar')
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
@@ -113,15 +131,38 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << '-Xmaxerrs' << '2000'
 }
 
+def modManifest = [
+        'Specification-Title'   : mod_id,
+        'Specification-Version' : '1',
+        'Implementation-Title'  : 'Verity-JE',
+        'Implementation-Version': mod_version,
+        'MixinConfigs'          : 'verity.mixins.json'
+]
+
+// MixinGradle writes the refmap into compileJava's temp dir, which is not a declared output.
+// If that file is gone while compileJava is still up to date, the jars silently ship without
+// a refmap, so force a recompile whenever it is missing.
+tasks.named('compileJava').configure {
+    def refmap = layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json')
+    outputs.upToDateWhen { refmap.get().asFile.exists() }
+}
+
+// Plain jar without the bundled libraries; the distributable is the jarJar output below.
 tasks.named('jar', Jar).configure {
-    manifest {
-        attributes([
-                'Specification-Title'   : mod_id,
-                'Specification-Version' : '1',
-                'Implementation-Title'  : 'Verity-JE',
-                'Implementation-Version': project.jar.archiveVersion,
-                'MixinConfigs'          : 'verity.mixins.json'
-        ])
-    }
+    archiveClassifier = 'slim'
+    manifest { attributes(modManifest) }
     finalizedBy 'reobfJar'
 }
+
+// verity-<version>.jar: classes + META-INF/jarjar, reobfuscated to SRG.
+tasks.named('jarJar').configure {
+    archiveClassifier = ''
+    manifest { attributes(modManifest) }
+    finalizedBy 'reobfJarJar'
+}
+
+reobf {
+    jarJar {}
+}
+
+tasks.named('assemble').configure { dependsOn 'jarJar' }
