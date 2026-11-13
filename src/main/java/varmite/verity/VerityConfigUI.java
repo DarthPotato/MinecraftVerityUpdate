@@ -53,6 +53,8 @@ public class VerityConfigUI {
    public static Screen createYACLScreen(Screen previousScreen) {
       return YetAnotherConfigLib.createBuilder()
          .title(Component.literal("Verity Configuration"))
+         // Forge saved config edits automatically; NeoForge only writes the file when asked.
+         .save(VerityConfig.SPEC::save)
          .category(
             ConfigCategory.createBuilder()
                .name(Component.literal("General"))
