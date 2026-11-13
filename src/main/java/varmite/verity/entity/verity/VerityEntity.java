@@ -419,6 +419,7 @@ public class VerityEntity extends PathfinderMob {
       VerityState.transformFollowingDay = false;
       if (VerityConfig.DAY_COUNT.get() <= (int)player.level().getOverworldClockTime() / 24000) {
          VerityConfig.DAY_COUNT.set((int)player.level().getOverworldClockTime() / 24000);
+         VerityConfig.SPEC.save();
       }
 
       VerityState.timeWillSpawn = 0L;
