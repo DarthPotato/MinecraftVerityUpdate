@@ -7,10 +7,9 @@ import net.neoforged.neoforge.client.event.RenderGuiLayerEvent.Post;
 import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.EventBusSubscriber.Bus;
 import varmite.verity.VerityConfig;
 
-@EventBusSubscriber(modid = "verity", value = Dist.CLIENT, bus = Bus.GAME)
+@EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class AudioHudRenderer {
    private static boolean wasRecording = false;
    private static long fadeStartTime = 0L;

@@ -55,7 +55,7 @@ public class BoxEntity extends LivingEntity implements GeoEntity {
 
    @Override
    public void tick() {
-      if (!this.level().isClientSide) {
+      if (!this.level().isClientSide()) {
          if (this.soundEffectTimer < 60) {
             this.soundEffectTimer++;
          } else if (!this.isOpened) {

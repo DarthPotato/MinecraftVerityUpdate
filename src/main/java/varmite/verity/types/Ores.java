@@ -1,17 +1,18 @@
 package varmite.verity.types;
 
+import net.minecraft.tags.BlockItemTags;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.level.block.Block;
 
 public enum Ores {
-   DIAMOND(BlockTags.DIAMOND_ORES),
+   DIAMOND(BlockItemTags.DIAMOND_ORES.block()),
    IRON(BlockTags.IRON_ORES),
    GOLD(BlockTags.GOLD_ORES),
-   COAL(BlockTags.COAL_ORES),
-   EMERALD(BlockTags.EMERALD_ORES),
-   LAPIS(BlockTags.LAPIS_ORES),
-   REDSTONE(BlockTags.REDSTONE_ORES),
+   COAL(BlockItemTags.COAL_ORES.block()),
+   EMERALD(BlockItemTags.EMERALD_ORES.block()),
+   LAPIS(BlockItemTags.LAPIS_ORES.block()),
+   REDSTONE(BlockItemTags.REDSTONE_ORES.block()),
    COPPER(BlockTags.COPPER_ORES);
 
    Ores(TagKey<Block> blockTag) {

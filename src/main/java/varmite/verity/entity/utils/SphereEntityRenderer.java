@@ -6,7 +6,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.verity.VerityEntity;
@@ -18,7 +18,7 @@ public class SphereEntityRenderer extends EntityRenderer<VerityEntity> {
       this.shadowRadius = 0.3F;
    }
 
-   public ResourceLocation getTextureLocation(VerityEntity entity) {
+   public Identifier getTextureLocation(VerityEntity entity) {
       return entity.getTextureRL();
    }
 

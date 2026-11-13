@@ -120,7 +120,7 @@ public class AiAPI {
             tools.level = (ServerLevel)verity.level();
             tools.server = verity.getServer();
          } else if (player != null) {
-            tools.level = player.serverLevel();
+            tools.level = player.level();
             tools.server = player.getServer();
          }
 
@@ -166,7 +166,7 @@ public class AiAPI {
          if (verity != null) {
             serverLevel = (ServerLevel)verity.level();
          } else if (player != null) {
-            serverLevel = player.serverLevel();
+            serverLevel = player.level();
          }
 
          if (serverLevel != null) {

@@ -50,7 +50,7 @@ public class VeritySpawnScheduler {
 
       Entity verity = ModEntities.VERITY_ENTITY.get().create(level);
       if (verity != null) {
-         verity.moveTo(chestPos.getX() + 0.5, chestPos.getY() + 1.0, chestPos.getZ() + 0.5, 0.0F, 0.0F);
+         verity.snapTo(chestPos.getX() + 0.5, chestPos.getY() + 1.0, chestPos.getZ() + 0.5, 0.0F, 0.0F);
          level.addFreshEntity(verity);
          PacketDistributor.sendToPlayersTrackingEntityAndSelf(verity, new PlayTtsPayload(verity.getId(), "You can't trap me lil bro."));
          level.playSound((Player)null, verity.blockPosition(), SoundEvents.CHEST_OPEN, SoundSource.BLOCKS, 1.0F, 1.0F);

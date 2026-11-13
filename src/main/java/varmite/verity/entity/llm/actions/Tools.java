@@ -17,7 +17,7 @@ import net.minecraft.core.HolderSet.Named;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.game.ClientboundStopSoundPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -146,7 +146,7 @@ public class Tools {
             }
 
             Holder<Biome> biome = this.level.getBiome(this.player.blockPosition());
-            return Objects.requireNonNull(this.level.registryAccess().registryOrThrow(Registries.BIOME).getKey(biome.value())).getPath().replace("_", " ");
+            return Objects.requireNonNull(this.level.registryAccess().lookupOrThrow(Registries.BIOME).getKey(biome.value())).getPath().replace("_", " ");
          } catch (Exception e) {
             return "Failed to fetch biome";
          }
@@ -191,7 +191,7 @@ public class Tools {
             BlockPos pos = this.player.blockPosition();
             Named<Structure> villages = (Named<Structure>)this.level
                .registryAccess()
-               .registryOrThrow(Registries.STRUCTURE)
+               .lookupOrThrow(Registries.STRUCTURE)
                .getTagOrEmpty(StructureTags.VILLAGE);
             BlockPos nearestVillage = this.level.findNearestMapStructure(villages.key(), pos, 150, false);
             if (nearestVillage == null) {
@@ -285,7 +285,7 @@ public class Tools {
       return this.serverCall(() -> {
          List<String> sounds = new ArrayList<>();
          BuiltInRegistries.SOUND_EVENT.forEach(soundEvent -> {
-            ResourceLocation loc = BuiltInRegistries.SOUND_EVENT.getKey(soundEvent);
+            Identifier loc = BuiltInRegistries.SOUND_EVENT.getKey(soundEvent);
             if (loc != null) {
                sounds.add(loc.toString());
             }
@@ -297,7 +297,7 @@ public class Tools {
    @Tool("Play a sound using a sound ID")
    String play_sound(String sound_id) {
       return this.serverCall(() -> {
-         ResourceLocation soundLoc = ResourceLocation.parse(sound_id);
+         Identifier soundLoc = Identifier.parse(sound_id);
          SoundEvent sound = BuiltInRegistries.SOUND_EVENT.get(soundLoc);
          if (sound != null && VerityState.verityEntity != null) {
             ModTriggers.PLAY_SOUND_TRIGGER.get().trigger(this.player);
@@ -315,7 +315,7 @@ public class Tools {
          StringBuilder items = new StringBuilder();
          String filter = prefix != null ? prefix.toLowerCase() : "";
          BuiltInRegistries.ITEM.forEach(item -> {
-            ResourceLocation loc = BuiltInRegistries.ITEM.getKey(item);
+            Identifier loc = BuiltInRegistries.ITEM.getKey(item);
             if (loc != null && (filter.isEmpty() || loc.toString().contains(filter))) {
                items.append(loc).append("\n");
             }
@@ -346,7 +346,7 @@ public class Tools {
    String stop_favorite_song() {
       return this.serverCall(() -> {
          MinecraftServer server = this.player.getServer();
-         ResourceLocation soundToStop = ResourceLocation.fromNamespaceAndPath("verity", "verity_disc");
+         Identifier soundToStop = Identifier.fromNamespaceAndPath("verity", "verity_disc");
          ClientboundStopSoundPacket stopSoundPacket = new ClientboundStopSoundPacket(soundToStop, SoundSource.VOICE);
          server.getPlayerList().broadcastAll(stopSoundPacket);
          return "Stopped the song.";
@@ -398,7 +398,7 @@ public class Tools {
             return "Failed, you have already transformed once and it cannot happen again";
          } else if (this.level.getDifficulty() != Difficulty.PEACEFUL) {
             VerityState.transformFollowingDay = true;
-            VerityState.timeWillSpawn = this.level.getDayTime() / 24000L + 1L;
+            VerityState.timeWillSpawn = this.level.getOverworldClockTime() / 24000L + 1L;
             return "Successful";
          } else {
             VerityState.transformFollowingDay = false;
@@ -460,7 +460,7 @@ public class Tools {
    @Tool("Gets the in game time")
    String get_ingame_time() {
       return this.serverCall(() -> {
-         long dayTime = this.level.getDayTime() % 24000L;
+         long dayTime = this.level.getOverworldClockTime() % 24000L;
          int totalMinutes = (int)(dayTime * 60L / 1000L + 360L);
          totalMinutes %= 1440;
          int hours = totalMinutes / 60;

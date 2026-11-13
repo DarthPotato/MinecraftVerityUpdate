@@ -6,10 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class VerityPreviewTexture {
-   private static final ResourceLocation PREVIEW_ID = ResourceLocation.fromNamespaceAndPath("verity", "dynamic/color_preview");
+   private static final Identifier PREVIEW_ID = Identifier.fromNamespaceAndPath("verity", "dynamic/color_preview");
    private static NativeImage baseImage;
    private static DynamicTexture texture;
    private static int lastHue = -1;
@@ -17,7 +17,7 @@ public class VerityPreviewTexture {
    public static void init() {
       try (InputStream stream = Minecraft.getInstance()
             .getResourceManager()
-            .getResource(ResourceLocation.fromNamespaceAndPath("verity", "textures/entity/preview.png"))
+            .getResource(Identifier.fromNamespaceAndPath("verity", "textures/entity/preview.png"))
             .get()
             .open()) {
          baseImage = NativeImage.read(stream);
@@ -60,7 +60,7 @@ public class VerityPreviewTexture {
       }
    }
 
-   public static ResourceLocation id() {
+   public static Identifier id() {
       return PREVIEW_ID;
    }
 }

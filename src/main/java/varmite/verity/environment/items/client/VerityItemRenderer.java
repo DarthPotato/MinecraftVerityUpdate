@@ -5,7 +5,7 @@ import com.mojang.math.Axis;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -24,7 +24,7 @@ public class VerityItemRenderer extends BlockEntityWithoutLevelRenderer {
       ItemStack stack, ItemDisplayContext displayContext, PoseStack poseStack, MultiBufferSource bufferSource, int packedLight, int packedOverlay
    ) {
       String variant = VerityVariants.fromStack(stack);
-      ResourceLocation texture = VerityVariants.entityTexture(variant);
+      Identifier texture = VerityVariants.entityTexture(variant);
       if (VerityState.isClientTalking) {
          String talkingFile = switch (variant) {
             case "happy" -> "happy_talking";
@@ -34,7 +34,7 @@ public class VerityItemRenderer extends BlockEntityWithoutLevelRenderer {
             default -> null;
          };
          if (talkingFile != null) {
-            texture = ResourceLocation.fromNamespaceAndPath("verity", "textures/entity/" + talkingFile + ".png");
+            texture = Identifier.fromNamespaceAndPath("verity", "textures/entity/" + talkingFile + ".png");
          }
       }
 

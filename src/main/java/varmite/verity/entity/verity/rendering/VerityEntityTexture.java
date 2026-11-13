@@ -6,21 +6,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public class VerityEntityTexture {
-   private static final ResourceLocation ENTITY_ID = ResourceLocation.fromNamespaceAndPath("verity", "dynamic/entity");
+   private static final Identifier ENTITY_ID = Identifier.fromNamespaceAndPath("verity", "dynamic/entity");
    private static NativeImage baseImage;
    private static DynamicTexture texture;
    private static int lastHue = -1;
-   private static ResourceLocation currentTexture = null;
+   private static Identifier currentTexture = null;
 
    public static void init() {
       texture = new DynamicTexture(new NativeImage(1, 1, true));
       Minecraft.getInstance().getTextureManager().register(ENTITY_ID, texture);
    }
 
-   public static void setBaseTexture(ResourceLocation textureLocation) {
+   public static void setBaseTexture(Identifier textureLocation) {
       if (!textureLocation.equals(currentTexture)) {
          currentTexture = textureLocation;
 
@@ -71,7 +71,7 @@ public class VerityEntityTexture {
       }
    }
 
-   public static ResourceLocation id() {
+   public static Identifier id() {
       return ENTITY_ID;
    }
 }

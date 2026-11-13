@@ -1,7 +1,7 @@
 package varmite.verity.environment.items;
 
 import java.util.List;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 public final class VerityVariants {
@@ -35,13 +35,13 @@ public final class VerityVariants {
       return "happy";
    }
 
-   public static ResourceLocation entityTexture(String variant) {
+   public static Identifier entityTexture(String variant) {
       String safeVariant = sanitize(variant);
       if (!VALID_VARIANTS.contains(safeVariant)) {
          safeVariant = "happy";
       }
 
-      return ResourceLocation.fromNamespaceAndPath("verity", "textures/entity/" + safeVariant + ".png");
+      return Identifier.fromNamespaceAndPath("verity", "textures/entity/" + safeVariant + ".png");
    }
 
    private static String sanitize(String variant) {

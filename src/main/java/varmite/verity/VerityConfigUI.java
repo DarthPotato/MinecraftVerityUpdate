@@ -18,7 +18,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.EventBusSubscriber.Bus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
 import varmite.verity.client.VerityPreviewTexture;
@@ -28,7 +27,7 @@ import varmite.verity.types.TTSLanguage;
 import varmite.verity.types.TTSProvider;
 import varmite.verity.types.VerityVoice;
 
-@EventBusSubscriber(modid = "verity", bus = Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class VerityConfigUI {
    @SubscribeEvent
    public static void onClientSetup(FMLClientSetupEvent event) {

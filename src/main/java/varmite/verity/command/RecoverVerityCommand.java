@@ -21,7 +21,7 @@ public class RecoverVerityCommand {
    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
       dispatcher.register((LiteralArgumentBuilder)Commands.literal("recoververity").executes(context -> {
          ServerPlayer player = ((CommandSourceStack)context.getSource()).getPlayerOrException();
-         ServerLevel level = player.serverLevel();
+         ServerLevel level = player.level();
          boolean verityExists = false;
 
          for (Entity entity : level.getAllEntities()) {
@@ -50,7 +50,7 @@ public class RecoverVerityCommand {
                   player.sendSystemMessage(Component.literal("§cFailed to recover Verity."));
                   return 0;
                } else {
-                  verity.moveTo(player.getX() + 1.5, player.getY(), player.getZ() + 1.5, player.getYRot(), 0.0F);
+                  verity.snapTo(player.getX() + 1.5, player.getY(), player.getZ() + 1.5, player.getYRot(), 0.0F);
                   level.addFreshEntity(verity);
                   player.sendSystemMessage(Component.literal("§aVerity has been recovered!"));
                   return 1;

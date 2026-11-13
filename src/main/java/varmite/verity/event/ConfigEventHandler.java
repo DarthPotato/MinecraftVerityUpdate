@@ -4,11 +4,10 @@ import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.EventBusSubscriber.Bus;
 import net.neoforged.fml.event.config.ModConfigEvent.Reloading;
 import varmite.verity.VerityConfig;
 
-@EventBusSubscriber(modid = "verity", bus = Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class ConfigEventHandler {
    @SubscribeEvent
    public static void onConfigReload(Reloading event) {

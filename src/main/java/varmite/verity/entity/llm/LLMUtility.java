@@ -11,9 +11,10 @@ import net.minecraft.core.Holder.Reference;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BlockItemTags;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
@@ -82,13 +83,13 @@ public class LLMUtility {
             BlockState state = player.level().getBlockState(pos);
 
             boolean match = switch (type.toLowerCase()) {
-               case "diamond" -> state.is(BlockTags.DIAMOND_ORES);
+               case "diamond" -> state.is(BlockItemTags.DIAMOND_ORES.block());
                case "iron" -> state.is(BlockTags.IRON_ORES);
                case "gold" -> state.is(BlockTags.GOLD_ORES);
-               case "coal" -> state.is(BlockTags.COAL_ORES);
-               case "emerald" -> state.is(BlockTags.EMERALD_ORES);
-               case "lapis" -> state.is(BlockTags.LAPIS_ORES);
-               case "redstone" -> state.is(BlockTags.REDSTONE_ORES);
+               case "coal" -> state.is(BlockItemTags.COAL_ORES.block());
+               case "emerald" -> state.is(BlockItemTags.EMERALD_ORES.block());
+               case "lapis" -> state.is(BlockItemTags.LAPIS_ORES.block());
+               case "redstone" -> state.is(BlockItemTags.REDSTONE_ORES.block());
                case "copper" -> state.is(BlockTags.COPPER_ORES);
                default -> false;
             };
@@ -108,8 +109,8 @@ public class LLMUtility {
    public static String findNearestFortress(ServerPlayer player) {
       BlockPos pos = player.blockPosition();
       ServerLevel serverLevel = (ServerLevel)player.level();
-      ResourceKey<Structure> fortressKey = ResourceKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath("minecraft", "fortress"));
-      Registry<Structure> registry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
+      ResourceKey<Structure> fortressKey = ResourceKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath("minecraft", "fortress"));
+      Registry<Structure> registry = serverLevel.registryAccess().lookupOrThrow(Registries.STRUCTURE);
       Optional<Reference<Structure>> holderOptional = registry.getHolder(fortressKey);
       if (holderOptional.isEmpty()) {
          return "Nether fortress structure is not registered or available.";
@@ -130,8 +131,8 @@ public class LLMUtility {
    public static String findOldBase(ServerPlayer player) {
       BlockPos pos = player.blockPosition();
       ServerLevel serverLevel = (ServerLevel)player.level();
-      ResourceKey<Structure> fortressKey = ResourceKey.create(Registries.STRUCTURE, ResourceLocation.fromNamespaceAndPath("verity", "thatmob_base"));
-      Registry<Structure> registry = serverLevel.registryAccess().registryOrThrow(Registries.STRUCTURE);
+      ResourceKey<Structure> fortressKey = ResourceKey.create(Registries.STRUCTURE, Identifier.fromNamespaceAndPath("verity", "thatmob_base"));
+      Registry<Structure> registry = serverLevel.registryAccess().lookupOrThrow(Registries.STRUCTURE);
       Optional<Reference<Structure>> holderOptional = registry.getHolder(fortressKey);
       if (holderOptional.isEmpty()) {
          return "ThatMob Base structure is not registered or available.";
@@ -155,7 +156,7 @@ public class LLMUtility {
       float karma = dataInstance.verityKarma;
       Item foundItem = null;
       if (item_id.contains(":")) {
-         ResourceLocation loc = ResourceLocation.tryParse(item_id);
+         Identifier loc = Identifier.tryParse(item_id);
          if (loc != null && BuiltInRegistries.ITEM.containsKey(loc)) {
             foundItem = BuiltInRegistries.ITEM.get(loc);
          }

@@ -7,9 +7,8 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.EventBusSubscriber.Bus;
 
-@EventBusSubscriber(modid = "verity", bus = Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class KeybindRegistry {
    public static final KeyMapping PUSH_TO_TALK = new KeyMapping("key.verity.push_to_talk", KeyConflictContext.IN_GAME, Type.KEYSYM, 86, "category.verity.keys");
    public static final KeyMapping CYCLE_MIC = new KeyMapping("key.verity.cycle_mic", KeyConflictContext.IN_GAME, Type.KEYSYM, 77, "category.verity.keys");

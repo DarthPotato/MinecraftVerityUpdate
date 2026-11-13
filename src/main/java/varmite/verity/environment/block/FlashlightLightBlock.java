@@ -23,7 +23,7 @@ public class FlashlightLightBlock extends Block implements SimpleWaterloggedBloc
    public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
 
    public FlashlightLightBlock() {
-      super(Properties.of().replaceable().noCollission().noOcclusion().noLootTable().pushReaction(PushReaction.DESTROY).lightLevel(state -> 15));
+      super(Properties.of().replaceable().noCollision().noOcclusion().noLootTable().pushReaction(PushReaction.POPPED).lightLevel(state -> 15));
       this.registerDefaultState(this.stateDefinition.any().setValue(WATERLOGGED, false));
    }
 

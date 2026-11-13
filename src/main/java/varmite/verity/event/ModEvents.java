@@ -18,7 +18,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.ClickEvent.Action;
 import net.minecraft.network.protocol.game.ClientboundStopSoundPacket;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,13 +30,13 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.Entity.RemovalReason;
 import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Player.BedSleepingProblem;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.gamerules.GameRules;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
@@ -110,7 +110,7 @@ public class ModEvents {
    @SubscribeEvent
    public static void onPlayerJoinWorld(PlayerLoggedInEvent event) {
       if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
-         ServerLevel level = player.serverLevel();
+         ServerLevel level = player.level();
          WorldSpawnData data = WorldSpawnData.get(level);
          ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)data.verityKarma), player);
       }
@@ -120,7 +120,7 @@ public class ModEvents {
    public static void onPlayerLogin(PlayerLoggedInEvent event) {
       if (event.getEntity() instanceof ServerPlayer player) {
          schedule(() -> {
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = player.level();
             WorldSpawnData data = WorldSpawnData.get(level);
             boolean foundJson = false;
 
@@ -226,7 +226,7 @@ public class ModEvents {
                Vec3 launchVelocity = player.getLookAngle().normalize().scale(1.5);
                VerityEntity newVerity = ModEntities.VERITY_ENTITY.get().create(player.level());
                if (newVerity != null) {
-                  newVerity.moveTo(player.blockPosition().offset(0, 1, 0).getCenter());
+                  newVerity.snapTo(player.blockPosition().offset(0, 1, 0).getCenter());
                   newVerity.setVariant(variantToSpawn);
                   newVerity.getPersistentData().putBoolean("WasThrown", true);
                   newVerity.setOwnerUUID(player.getUUID());
@@ -236,7 +236,7 @@ public class ModEvents {
                      );
                   player.level().playSound((Player)null, player.blockPosition(), SoundEvents.ENDER_DRAGON_FLAP, SoundSource.PLAYERS, 1.0F, 1.0F);
                   newVerity.setDeltaMovement(launchVelocity);
-                  newVerity.hurtMarked = true;
+                  newVerity.needsSync = true;
                }
             }
          }
@@ -299,7 +299,7 @@ public class ModEvents {
 
    @SubscribeEvent
    public static void onPlayerDropsDrop(LivingDropsEvent event) {
-      if (!event.getEntity().level().isClientSide) {
+      if (!event.getEntity().level().isClientSide()) {
          if (event.getEntity() instanceof Player) {
             event.getDrops().removeIf(itemEntity -> itemEntity.getItem().is(ModItems.FLASHLIGHT.get()));
          }
@@ -426,11 +426,11 @@ public class ModEvents {
             }
 
             event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.sidedSuccess(event.getLevel().isClientSide()));
+            event.setCancellationResult(InteractionResult.SUCCESS);
             if (!event.getLevel().isClientSide()) {
                MinecraftServer server = vEntity.getServer();
                if (server != null) {
-                  ResourceLocation soundToStop = ResourceLocation.fromNamespaceAndPath("verity", "verity_disc");
+                  Identifier soundToStop = Identifier.fromNamespaceAndPath("verity", "verity_disc");
                   ClientboundStopSoundPacket stopSoundPacket = new ClientboundStopSoundPacket(soundToStop, SoundSource.VOICE);
                   server.getPlayerList().broadcastAll(stopSoundPacket);
                }
@@ -460,7 +460,7 @@ public class ModEvents {
             }
 
             event.setCanceled(true);
-            event.setCancellationResult(InteractionResult.sidedSuccess(event.getLevel().isClientSide()));
+            event.setCancellationResult(InteractionResult.SUCCESS);
             if (!event.getLevel().isClientSide()) {
                bEntity.triggerOpen();
                player.swing(hand, true);
@@ -471,10 +471,10 @@ public class ModEvents {
                      Level level = event.getLevel();
                      VerityEntity verity = ModEntities.VERITY_ENTITY
                         .get()
-                        .spawn((ServerLevel)level, (ItemStack)null, null, bEntity.blockPosition(), MobSpawnType.MOB_SUMMONED, true, true);
+                        .spawn((ServerLevel)level, (ItemStack)null, null, bEntity.blockPosition(), EntitySpawnReason.MOB_SUMMONED, true, true);
                      if (verity != null) {
                         VerityState.verityEntity = verity;
-                        verity.moveTo(bEntity.blockPosition().getX() + 0.5, bEntity.blockPosition().getY(), bEntity.blockPosition().getZ() + 0.5, 0.0F, 0.0F);
+                        verity.snapTo(bEntity.blockPosition().getX() + 0.5, bEntity.blockPosition().getY(), bEntity.blockPosition().getZ() + 0.5, 0.0F, 0.0F);
                         verity.triggerBoxDrop();
                         verity.getPersistentData().putBoolean("WasThrown", false);
                         ServerLevel verityLevel = (ServerLevel)verity.level();
@@ -541,7 +541,7 @@ public class ModEvents {
                   .withStyle(Style.EMPTY.withClickEvent(new ClickEvent(Action.OPEN_URL, "https://youtu.be/O3pSCBvJ_i0")).withUnderlined(true));
                player.sendSystemMessage(message);
                BlockPos safeSpawnPos = findNearestLand(level, player.blockPosition());
-               ModEntities.BOX_ENTITY.get().spawn(level, (ItemStack)null, null, safeSpawnPos, MobSpawnType.MOB_SUMMONED, true, true);
+               ModEntities.BOX_ENTITY.get().spawn(level, (ItemStack)null, null, safeSpawnPos, EntitySpawnReason.MOB_SUMMONED, true, true);
                data.hasSpawnedEntity = true;
                data.setDirty();
             }
@@ -551,9 +551,9 @@ public class ModEvents {
 
    @SubscribeEvent
    public static void onPlayerRespawn(PlayerRespawnEvent event) {
-      if (!event.getEntity().level().isClientSide) {
+      if (!event.getEntity().level().isClientSide()) {
          Player player = event.getEntity();
-         if (!player.level().getGameRules().getBoolean(GameRules.RULE_KEEPINVENTORY)) {
+         if (!player.level().getGameRules().getBoolean(GameRules.KEEP_INVENTORY)) {
             VerityEntity verity = VerityState.verityEntity;
             if (verity != null && !verity.isRemoved() && verity.getOwnerUUID().isPresent() && player.getUUID().equals(verity.getOwnerUUID().get())) {
                ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
@@ -613,7 +613,7 @@ public class ModEvents {
       ItemStack stack = player.getItemInHand(hand);
       if (stack.getItem() == ModItems.VERITY_ITEM.get()) {
          event.setCanceled(true);
-         event.setCancellationResult(InteractionResult.sidedSuccess(event.getLevel().isClientSide()));
+         event.setCancellationResult(InteractionResult.SUCCESS);
          String name = VerityConfig.VERITY_CUSTOM_NAME.get();
          if (!event.getLevel().isClientSide()) {
             Direction face = event.getFace();
@@ -632,7 +632,7 @@ public class ModEvents {
             player.swing(hand, true);
             stack.shrink(1);
             player.level().playSound((Player)null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1.0F, 0.8F);
-            VerityEntity spawnedVerity = ModEntities.VERITY_ENTITY.get().spawn(level, spawnPos, MobSpawnType.MOB_SUMMONED);
+            VerityEntity spawnedVerity = ModEntities.VERITY_ENTITY.get().spawn(level, spawnPos, EntitySpawnReason.MOB_SUMMONED);
             if (spawnedVerity != null) {
                spawnedVerity.setVariant(variantToSpawn);
                spawnedVerity.getPersistentData().putBoolean("WasThrown", false);

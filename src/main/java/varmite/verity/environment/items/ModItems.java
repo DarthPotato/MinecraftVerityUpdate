@@ -1,7 +1,7 @@
 package varmite.verity.environment.items;
 
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.JukeboxSong;
@@ -24,7 +24,7 @@ public class ModItems {
 
    /** The discs are data-driven since 1.21: see data/verity/jukebox_song. */
    private static ResourceKey<JukeboxSong> song(String name) {
-      return ResourceKey.create(Registries.JUKEBOX_SONG, ResourceLocation.fromNamespaceAndPath("verity", name));
+      return ResourceKey.create(Registries.JUKEBOX_SONG, Identifier.fromNamespaceAndPath("verity", name));
    }
 
    public static void register(IEventBus bus) {

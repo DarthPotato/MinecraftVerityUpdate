@@ -4,14 +4,13 @@ import java.util.Map.Entry;
 import net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.client.resources.model.ModelResourceLocation;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent.RegisterRenderers;
 import net.neoforged.neoforge.client.event.ModelEvent.ModifyBakingResult;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.common.EventBusSubscriber.Bus;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import varmite.verity.client.VerityPreviewTexture;
 import varmite.verity.client.audio.TTSHandler;
@@ -26,7 +25,7 @@ import varmite.verity.entity.verity.rendering.VerityEntityTexture;
 import varmite.verity.entity.veritybox.rendering.BoxRenderer;
 import varmite.verity.environment.items.UnshadedBakedModel;
 
-@EventBusSubscriber(modid = "verity", bus = Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class ModBusClientSetup {
    @SubscribeEvent
    public static void registerRenderers(RegisterRenderers event) {
@@ -36,12 +35,12 @@ public class ModBusClientSetup {
 
    @SubscribeEvent
    public static void registerGuiOverlays(RegisterGuiLayersEvent event) {
-      event.registerAboveAll(ResourceLocation.fromNamespaceAndPath("verity", "karma_hud"), KarmaHudOverlay.HUD_KARMA);
+      event.registerAboveAll(Identifier.fromNamespaceAndPath("verity", "karma_hud"), KarmaHudOverlay.HUD_KARMA);
    }
 
    @SubscribeEvent
    public static void onModifyBakingResult(ModifyBakingResult event) {
-      ResourceLocation verityItemId = ResourceLocation.fromNamespaceAndPath("verity", "verity_item");
+      Identifier verityItemId = Identifier.fromNamespaceAndPath("verity", "verity_item");
 
       for (Entry<ModelResourceLocation, BakedModel> entry : event.getModels().entrySet()) {
          ModelResourceLocation key = entry.getKey();

@@ -16,11 +16,11 @@ import varmite.verity.network.PlayTtsPayload;
 public class AiManager {
    public static void queryAI(VerityEntity verity, String query, ServerPlayer Player) {
       ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-      ServerLevel level = verity != null ? (ServerLevel)verity.level() : (Player != null ? Player.serverLevel() : null);
+      ServerLevel level = verity != null ? (ServerLevel)verity.level() : (Player != null ? Player.level() : null);
       if (level != null) {
          MinecraftServer server = level.getServer();
          WorldSpawnData worldData = WorldSpawnData.get(level);
-         long currentDay = HostileEvents.progressionActive(level) ? level.getDayTime() / 24000L : 0L;
+         long currentDay = HostileEvents.progressionActive(level) ? level.getOverworldClockTime() / 24000L : 0L;
          float currentKarma = worldData.verityKarma;
          boolean demonLoose = worldData.hasLiveDemon();
          CompletableFuture.<String>supplyAsync(() -> {

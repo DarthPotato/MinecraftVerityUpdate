@@ -5,7 +5,7 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import org.joml.Matrix4f;
 
@@ -19,7 +19,7 @@ public final class SphereMesh {
    public static void render(
       PoseStack poseStack,
       MultiBufferSource bufferSource,
-      ResourceLocation texture,
+      Identifier texture,
       float radius,
       int latitudes,
       int longitudes,

@@ -4,12 +4,12 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record KarmaSyncS2CPacket(int karma) implements CustomPacketPayload {
    public static final CustomPacketPayload.Type<KarmaSyncS2CPacket> TYPE = new CustomPacketPayload.Type<>(
-      ResourceLocation.fromNamespaceAndPath("verity", "karma_sync")
+      Identifier.fromNamespaceAndPath("verity", "karma_sync")
    );
    public static final StreamCodec<RegistryFriendlyByteBuf, KarmaSyncS2CPacket> STREAM_CODEC = StreamCodec.composite(
       ByteBufCodecs.INT, KarmaSyncS2CPacket::karma, KarmaSyncS2CPacket::new

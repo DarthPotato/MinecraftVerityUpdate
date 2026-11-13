@@ -1,6 +1,6 @@
 package varmite.verity.environment.sounds;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -21,14 +21,14 @@ public class ModSounds {
    public static final DeferredHolder<SoundEvent, SoundEvent> BONE_0 = registerSoundEvent("bone_snap");
    public static final DeferredHolder<SoundEvent, SoundEvent> BONE_1 = registerSoundEvent("bone_break");
    public static final DeferredHolder<SoundEvent, SoundEvent> VERITY_DISC_SOUND = SOUND_EVENTS.register(
-      "verity_disc", () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("verity", "verity_disc"))
+      "verity_disc", () -> SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("verity", "verity_disc"))
    );
    public static final DeferredHolder<SoundEvent, SoundEvent> VERITY_EDIT_DISC_SOUND = SOUND_EVENTS.register(
-      "verity_edit_disc", () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("verity", "verity_edit_disc"))
+      "verity_edit_disc", () -> SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("verity", "verity_edit_disc"))
    );
 
    private static DeferredHolder<SoundEvent, SoundEvent> registerSoundEvent(String name) {
-      return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("verity", name)));
+      return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("verity", name)));
    }
 
    public static void register(IEventBus eventBus) {

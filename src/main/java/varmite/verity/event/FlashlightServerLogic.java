@@ -35,7 +35,7 @@ public class FlashlightServerLogic {
    public static void onServerTick(ServerTickEvent.Post event) {
       if (event.getServer() != null) {
          for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
-            ServerLevel level = player.serverLevel();
+            ServerLevel level = player.level();
             UUID uuid = player.getUUID();
             boolean isFlashlightOn = false;
             ItemStack main = player.getMainHandItem();
@@ -123,7 +123,7 @@ public class FlashlightServerLogic {
    private static void cleanupLight(ServerPlayer player, UUID uuid) {
       Set<BlockPos> positions = activeLights.get(uuid);
       if (positions != null) {
-         ServerLevel level = player.serverLevel();
+         ServerLevel level = player.level();
 
          for (BlockPos pos : positions) {
             BlockState state = level.getBlockState(pos);

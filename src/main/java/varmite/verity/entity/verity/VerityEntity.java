@@ -15,7 +15,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -29,7 +29,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobSpawnType;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.PathfinderMob;
 import net.minecraft.world.entity.SpawnGroupData;
 import net.minecraft.world.entity.ai.attributes.Attributes;
@@ -141,7 +141,7 @@ public class VerityEntity extends PathfinderMob {
    }
 
    public void triggerBoxDrop() {
-      if (!this.level().isClientSide) {
+      if (!this.level().isClientSide()) {
          this.getServer().execute(() -> {
             WorldSpawnData data = WorldSpawnData.get((ServerLevel)this.level());
             data.verityKarma = 10.0F;
@@ -156,20 +156,20 @@ public class VerityEntity extends PathfinderMob {
    @Override
    public void onSyncedDataUpdated(EntityDataAccessor<?> key) {
       super.onSyncedDataUpdated(key);
-      if (this.level().isClientSide && BOUNCE_START_TICK.equals(key) && this.entityData.get(BOUNCE_START_TICK) > 0) {
+      if (this.level().isClientSide() && BOUNCE_START_TICK.equals(key) && this.entityData.get(BOUNCE_START_TICK) > 0) {
          this.clientAnimationTicks = 50;
       }
    }
 
    @Override
    public boolean causeFallDamage(float fallDistance, float multiplier, DamageSource source) {
-      if (!this.level().isClientSide) {
+      if (!this.level().isClientSide()) {
          if (fallDistance > 0.75F) {
             ModEvents.schedule(() -> {
                if (!this.isRemoved()) {
                   double bounceStrength = Math.min(Math.sqrt(fallDistance) * 0.22, 0.7);
                   this.setDeltaMovement(this.getDeltaMovement().x, bounceStrength, this.getDeltaMovement().z);
-                  this.hasImpulse = true;
+                  this.needsSync = true;
                   this.setOnGround(false);
                   Random random1 = new Random();
                   int i = random1.nextInt(3);
@@ -214,7 +214,7 @@ public class VerityEntity extends PathfinderMob {
    public void tick() {
       Vec3 motionBeforeCollision = this.getDeltaMovement();
       super.tick();
-      if (this.level().isClientSide) {
+      if (this.level().isClientSide()) {
          this.clientRollAngleO = this.clientRollAngle;
          double dx = this.getX() - this.xo;
          double dz = this.getZ() - this.zo;
@@ -279,7 +279,7 @@ public class VerityEntity extends PathfinderMob {
 
             if (bounced) {
                this.setDeltaMovement(newX, this.getDeltaMovement().y, newZ);
-               this.hasImpulse = true;
+               this.needsSync = true;
                Random random1 = new Random();
                int i = random1.nextInt(3);
                this.setVariant("hurt");
@@ -295,7 +295,7 @@ public class VerityEntity extends PathfinderMob {
 
          if (this.blockPosition().getY() <= -63) {
             this.setDeltaMovement(0.0, 0.0, 0.0);
-            this.hasImpulse = true;
+            this.needsSync = true;
          }
 
          if (this.entityData.get(BOUNCE_START_TICK) > 0 && this.tickCount > 100) {
@@ -309,7 +309,7 @@ public class VerityEntity extends PathfinderMob {
          }
 
          ServerLevel serverLevel = (ServerLevel)this.level();
-         long currentDay = serverLevel.getDayTime() / 24000L;
+         long currentDay = serverLevel.getOverworldClockTime() / 24000L;
          float currentKarma = WorldSpawnData.get(serverLevel).verityKarma;
          if (currentDay >= VerityConfig.DAY_COUNT.get().intValue() && currentKarma < 9000.0F) {
             if (!this.isRemoved()) {
@@ -335,7 +335,7 @@ public class VerityEntity extends PathfinderMob {
          }
 
          if (this.tickCount % 40 == 0) {
-            currentDay = serverLevel.getDayTime() / 24000L;
+            currentDay = serverLevel.getOverworldClockTime() / 24000L;
             if (currentDay >= VerityConfig.DAY_COUNT.get() / 2 && !this.hasTriggeredDay2 && currentKarma < 9000.0F) {
                this.hasTriggeredDay2 = true;
             }
@@ -382,7 +382,7 @@ public class VerityEntity extends PathfinderMob {
       }
 
       BlockPos spawnPos = this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition());
-      Entity standIn = EntityType.WITHER.spawn(serverLevel, spawnPos, MobSpawnType.CONVERSION);
+      Entity standIn = EntityType.WITHER.spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION);
       if (standIn == null) {
          return false;
       }
@@ -408,8 +408,8 @@ public class VerityEntity extends PathfinderMob {
 
       data.setDirty();
       VerityState.transformFollowingDay = false;
-      if (VerityConfig.DAY_COUNT.get() <= (int)player.level().getDayTime() / 24000) {
-         VerityConfig.DAY_COUNT.set((int)player.level().getDayTime() / 24000);
+      if (VerityConfig.DAY_COUNT.get() <= (int)player.level().getOverworldClockTime() / 24000) {
+         VerityConfig.DAY_COUNT.set((int)player.level().getOverworldClockTime() / 24000);
       }
 
       VerityState.timeWillSpawn = 0L;
@@ -449,7 +449,7 @@ public class VerityEntity extends PathfinderMob {
    }
 
    public void startTalking(int durationTicks) {
-      if (!this.level().isClientSide) {
+      if (!this.level().isClientSide()) {
          this.entityData.set(IS_TALKING, true);
          this.entityData.set(TALK_FRAME, this.random.nextInt(2));
          this.talkTicks = 0;
@@ -458,7 +458,7 @@ public class VerityEntity extends PathfinderMob {
    }
 
    public void stopTalking() {
-      if (!this.level().isClientSide) {
+      if (!this.level().isClientSide()) {
          this.entityData.set(IS_TALKING, false);
          this.talkTicks = 0;
          this.talkEndTick = -1;
@@ -523,16 +523,16 @@ public class VerityEntity extends PathfinderMob {
       return fileName;
    }
 
-   public ResourceLocation getTextureRL() {
+   public Identifier getTextureRL() {
       String path = this.getTexturePath();
       if (path == null) {
-         return ResourceLocation.fromNamespaceAndPath("verity", "textures/entity/happy.png");
+         return Identifier.fromNamespaceAndPath("verity", "textures/entity/happy.png");
       }
 
       path = path.replace("verity:", "");
       boolean visuallyTalking = this.isTalking() || this.clientIsTalking || this.clientIntroTicks > 0;
       if (!visuallyTalking) {
-         return ResourceLocation.fromNamespaceAndPath("verity", path);
+         return Identifier.fromNamespaceAndPath("verity", path);
       }
 
       String fileName = path.substring(path.lastIndexOf(47) + 1).replace(".png", "");
@@ -544,7 +544,7 @@ public class VerityEntity extends PathfinderMob {
          case "serious_1", "serious_2", "serious_3" -> "serious_talking";
          default -> fileName;
       };
-      return ResourceLocation.fromNamespaceAndPath("verity", "textures/entity/" + talkingTexture + ".png");
+      return Identifier.fromNamespaceAndPath("verity", "textures/entity/" + talkingTexture + ".png");
    }
 
    public void setVariant(String variant) {
@@ -561,7 +561,7 @@ public class VerityEntity extends PathfinderMob {
       }
 
       if (!VALID_VARIANTS.contains(variant)) {
-         long currentDay = this.level().getDayTime() / 24000L;
+         long currentDay = this.level().getOverworldClockTime() / 24000L;
          int threshold = Math.max(1, VerityConfig.DAY_COUNT.get() / 2);
          variant = currentDay >= threshold ? "evil" : "happy";
       }

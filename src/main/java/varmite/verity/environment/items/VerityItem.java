@@ -79,7 +79,7 @@ public class VerityItem extends Item {
 
                VerityEntity spawnedEntity = ModEntities.VERITY_ENTITY.get().create(level);
                if (spawnedEntity != null) {
-                  spawnedEntity.moveTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
+                  spawnedEntity.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, 0.0F, 0.0F);
                   spawnedEntity.setVariant(variantToSpawn);
                   if (stack.has(DataComponents.CUSTOM_DATA)) {
                      spawnedEntity.readAdditionalSaveData(StackData.copy(stack));
@@ -98,7 +98,7 @@ public class VerityItem extends Item {
 
          if (entity.blockPosition().getY() <= -63) {
             entity.setDeltaMovement(0.0, 1.0, 0.0);
-            entity.hasImpulse = true;
+            entity.needsSync = true;
          }
       }
 
@@ -113,7 +113,7 @@ public class VerityItem extends Item {
             BlockPos safePos = this.findClosestSafeSpawnLocation(serverLevel, itemPos);
             VerityEntity spawnedEntity = ModEntities.VERITY_ENTITY.get().create(serverLevel);
             if (spawnedEntity != null) {
-               spawnedEntity.moveTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, 0.0F, 0.0F);
+               spawnedEntity.snapTo(safePos.getX() + 0.5, safePos.getY(), safePos.getZ() + 0.5, 0.0F, 0.0F);
                serverLevel.addFreshEntity(spawnedEntity);
                spawnedEntity.setVariant("serious_1");
                spawnedEntity.level().playSound((Player)null, safePos, ModSounds.BONE_0.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
