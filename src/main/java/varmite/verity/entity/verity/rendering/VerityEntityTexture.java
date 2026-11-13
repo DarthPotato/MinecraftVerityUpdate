@@ -21,6 +21,10 @@ public class VerityEntityTexture {
    }
 
    public static void setBaseTexture(Identifier textureLocation) {
+      if (texture == null) {
+         init();
+      }
+
       if (!textureLocation.equals(currentTexture)) {
          currentTexture = textureLocation;
 

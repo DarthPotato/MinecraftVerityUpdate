@@ -127,3 +127,36 @@
 **Still open for Stage 1**
 - No owner playtest with working replies yet, so `playable-1.21.1` is not tagged. Voice, mic, config screen, karma bar, discs and flashlight are unverified on 1.21.1. Two clients on one server is untested.
 - Thinking on is reliable but slow; thinking off is fast but skipped tool calls in a small test. Owner's call.
+
+## Stage 2: NeoForge 26.3 (Java 25)
+
+### 2026-11-13: port compiles and runs; first owner playtest pending
+
+Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerityUpdate-26.3`, a git worktree), so the 1.21.1 build in the main folder keeps working.
+
+**Done**
+- NeoForge 26.3.0.103, GeckoLib 5.5.7 (`com.geckolib` maven group), YACL 3.9.7+26.3-neoforge, Java 25, ModDevGradle 2.0.148, Gradle 9.2.1. No Parchment: 26.x is unobfuscated.
+- Renames: `ResourceLocation` to `Identifier`, trigger and predicate packages, `MobSpawnType` to `EntitySpawnReason`, day time to the overworld clock, `hurtMarked`/`hasImpulse` to `needsSync`, `serverLevel()` to `level()`, `getServer()` via the level.
+- Entities save through `ValueOutput`/`ValueInput`; Verity's data inside the item goes through a tag-backed `ValueOutput`. Owner UUID is an `EntityReference`. Saved data uses a `SavedDataType` with a codec (same keys).
+- Karma attachment uses `ValueIOSerializable`. Triggers take a loot-condition player predicate.
+- Items and blocks register through `DeferredRegister.Items/Blocks` (ids in properties). Every item has an `assets/verity/items/*.json` definition.
+- Rendering: Verity's sphere uses an `EntityRenderState` plus `submitCustomGeometry`. The Verity item uses a special model renderer (`verity:verity`), selected per display context for the first-person tweak. HUD bars are `GuiLayer`s drawing through `GuiGraphicsExtractor`.
+- GeckoLib 5: the box model and animation moved to `assets/verity/geckolib/`, new controller and renderer API.
+- Key mappings use a registered `KeyMapping.Category` (`key.category.verity.keys`).
+- Config registers as `LOCAL` with the file name `verity-common.toml` (the old `COMMON` type is gone).
+- Color-preview and tint textures are created on first use (client setup is too early on 26.3).
+
+**Parked / stubbed**
+- `trueDarkness`: the lightmap is drawn on the GPU now, so the CPU-side mixin has nothing to hook. Mixin parked in `parked/truedarkness`; the option does nothing on 26.3. It was default-off anyway.
+- The custom item-model lighting tweak (`UnshadedBakedModel`) is gone; baked models changed completely. Only affected the Verity item's model, which the special renderer replaces.
+- `Verity Fog`: the fog event can no longer be cancelled; the colour and distance changes still apply. Default-off.
+
+**Verified (no player)**
+- `build` passes; the jar bundles the same 18 libraries.
+- Dev dedicated server: Verity and the box summon and tick, all three structures locate, Verity's AI reply arrives from Ollama.
+- Standalone NeoForge 26.3.0.103 server with the built jar: starts clean.
+- Dev client: loads to the title screen with no errors from Verity; GeckoLib loads the box model.
+
+**Not verified**
+- Anything with a player on 26.3: world join, rendering of Verity / the box / the item, HUD, chat, voice, mic, config screen.
+- Automatic client join (`-PjoinServer`) did not connect on 26.3; cause not investigated.

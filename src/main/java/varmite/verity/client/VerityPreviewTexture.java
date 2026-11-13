@@ -14,6 +14,16 @@ public class VerityPreviewTexture {
    private static DynamicTexture texture;
    private static int lastHue = -1;
 
+   /**
+    * Creates the texture the first time the config screen needs it. Client setup is too early on 26.3: it runs off the
+    * render thread and before resources are loaded.
+    */
+   private static void ensureInit() {
+      if (texture == null) {
+         init();
+      }
+   }
+
    public static void init() {
       try (InputStream stream = Minecraft.getInstance()
             .getResourceManager()
@@ -31,6 +41,7 @@ public class VerityPreviewTexture {
    }
 
    public static void applyHue(int hue) {
+      ensureInit();
       if (hue != lastHue) {
          lastHue = hue;
          NativeImage out = texture.getPixels();
@@ -58,6 +69,7 @@ public class VerityPreviewTexture {
    }
 
    public static Identifier id() {
+      ensureInit();
       return PREVIEW_ID;
    }
 }
