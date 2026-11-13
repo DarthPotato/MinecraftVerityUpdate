@@ -1,0 +1,127 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'net.minecraftforge.gradle' version '[6.0,6.2)'
+    id 'org.spongepowered.mixin' version '0.7.+'
+}
+
+version = mod_version
+group = mod_group_id
+
+base {
+    archivesName = mod_id
+}
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
+
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.console.level', 'debug'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {}
+        server {
+            args '--nogui'
+        }
+    }
+}
+
+// The original SRG refmap is deleted; the annotation processor regenerates it.
+mixin {
+    add sourceSets.main, 'verity.refmap.json'
+    config 'verity.mixins.json'
+}
+
+repositories {
+    mavenCentral()
+    // Owner's exact mod jars (GeckoLib, YACL) and the original Verity jar.
+    flatDir { dir 'reference' }
+}
+
+// Third-party libraries Verity 6.0.0-beta.9 ships in META-INF/jarjar, at the exact
+// versions from its metadata.json. All of these are byte-identical to Maven Central.
+ext.bundledLibs = [
+        'dev.langchain4j:langchain4j:1.18.0',
+        'dev.langchain4j:langchain4j-core:1.18.1',
+        'dev.langchain4j:langchain4j-http-client:1.18.0',
+        'dev.langchain4j:langchain4j-http-client-jdk:1.18.0',
+        'dev.langchain4j:langchain4j-open-ai:1.18.0',
+        'dev.langchain4j:langchain4j-ollama:1.18.0',
+        'dev.langchain4j:langchain4j-mistral-ai:1.18.0',
+        'dev.langchain4j:langchain4j-google-genai:1.18.1-beta28',
+        'com.fasterxml.jackson.core:jackson-annotations:2.22',
+        'com.fasterxml.jackson.core:jackson-core:2.22.1',
+        'com.fasterxml.jackson.core:jackson-databind:2.22.1',
+        'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.1',
+        'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.1',
+        'com.knuddels:jtokkit:1.1.0',
+        'org.apache.opennlp:opennlp-tools:2.5.9',
+        'org.jspecify:jspecify:1.0.0',
+        'org.java-websocket:Java-WebSocket:1.6.0',
+        'javax.annotation:javax.annotation-api:1.3.2',
+        'com.google.api:api-common:2.45.0',
+        'com.google.auth:google-auth-library-credentials:1.33.0',
+        'com.google.auth:google-auth-library-oauth2-http:1.33.0',
+        'com.google.auto.value:auto-value-annotations:1.11.0',
+        'com.google.http-client:google-http-client:1.46.2',
+        'com.google.http-client:google-http-client-gson:1.46.2',
+        'com.google.protobuf:protobuf-java:3.25.5',
+        'io.grpc:grpc-api:1.70.0',
+        'io.grpc:grpc-context:1.70.0',
+        'io.opencensus:opencensus-api:0.31.1',
+        'io.opencensus:opencensus-contrib-http-util:0.31.1',
+]
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // Stage 0 step 2 (already done): SRG -> Mojang remap of the original jar, used only as
+    // the Vineflower input. Re-enable to regenerate the remapped jar in the ForgeGradle cache.
+    // compileOnly fg.deobf("blank:verity:6.0.0-beta.9")
+
+    implementation fg.deobf("blank:geckolib-forge-1.20.1:4.8.4")
+    implementation fg.deobf("blank:yet_another_config_lib_v3:3.6.6+1.20.1-forge")
+
+    bundledLibs.each { coords ->
+        implementation(coords) { transitive = false }
+    }
+
+    // Not on Maven Central: sherpa-onnx 1.13.3 (GitHub release jars) and the original
+    // author's shaded google-genai 1.62.0 bundle. Copied unmodified from the original jar.
+    implementation files('libs/sherpa-onnx-v1.13.3.jar', 'libs/verity-genai-bundle-1.62.0.jar')
+    runtimeOnly files(
+            'libs/sherpa-onnx-native-lib-win-x64-v1.13.3.jar',
+            'libs/sherpa-onnx-native-lib-linux-x64-v1.13.3.jar',
+            'libs/sherpa-onnx-native-lib-osx-x64-v1.13.3.jar')
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-Xmaxerrs' << '2000'
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                'Specification-Title'   : mod_id,
+                'Specification-Version' : '1',
+                'Implementation-Title'  : 'Verity-JE',
+                'Implementation-Version': project.jar.archiveVersion,
+                'MixinConfigs'          : 'verity.mixins.json'
+        ])
+    }
+    finalizedBy 'reobfJar'
+}
