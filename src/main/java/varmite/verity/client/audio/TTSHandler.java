@@ -331,7 +331,12 @@ public class TTSHandler {
    }
 
    private static Builder createAudioRequestBuilder() {
-      if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.KOKORO) {
+      if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.FISH_AUDIO) {
+         return HttpRequest.newBuilder()
+            .uri(URI.create("https://api.fish.audio/v1/tts"))
+            .version(Version.HTTP_1_1)
+            .header("Authorization", "Bearer " + VerityConfig.FISH_API_KEY.get().trim());
+      } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.KOKORO) {
          return HttpRequest.newBuilder().uri(URI.create(joinUrl(VerityConfig.TTS_ENDPOINT.get(), "audio/speech"))).version(Version.HTTP_1_1);
       } else {
          return VerityConfig.TTS_PROVIDER.get() == TTSProvider.GROQ
@@ -406,6 +411,17 @@ public class TTSHandler {
       }
    }
 
+   /** fish.audio is asked for raw PCM (44.1 kHz, 16-bit, mono), which has no header to read the format from. */
+   private static AudioInputStream openAudioStream(InputStream rawStream) throws Exception {
+      BufferedInputStream buffered = new BufferedInputStream(rawStream);
+      if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.FISH_AUDIO) {
+         AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0F, 16, 1, 2, 44100.0F, false);
+         return new AudioInputStream(buffered, format, AudioSystem.NOT_SPECIFIED);
+      } else {
+         return AudioSystem.getAudioInputStream(buffered);
+      }
+   }
+
    public static void playEndpointTTS(Player player, String text, VerityEntity verity) {
       cancelCurrentSpeech = false;
       resetMuffledFilter();
@@ -438,6 +454,15 @@ public class TTSHandler {
             json.add("output_format", output);
             json.addProperty("locale", VerityConfig.TTS_LANGUAGE.get().getLangCode());
             json.add("generation_config", genConf);
+         } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.FISH_AUDIO) {
+            json.addProperty("text", text);
+            String voiceId = VerityConfig.FISH_VOICE_ID.get().trim();
+            if (!voiceId.isEmpty()) {
+               json.addProperty("reference_id", voiceId);
+            }
+
+            json.addProperty("format", "pcm");
+            json.addProperty("sample_rate", 44100);
          }
 
          HttpRequest request = createAudioRequestBuilder().header("Content-Type", "application/json").POST(BodyPublishers.ofString(json.toString())).build();
@@ -446,7 +471,7 @@ public class TTSHandler {
          if (response.statusCode() == 200) {
             try (
                InputStream rawStream = response.body();
-               AudioInputStream audioStream = AudioSystem.getAudioInputStream(new BufferedInputStream(rawStream));
+               AudioInputStream audioStream = openAudioStream(rawStream);
             ) {
                AudioFormat format = audioStream.getFormat();
                Info info = new Info(SourceDataLine.class, format);
@@ -533,6 +558,7 @@ public class TTSHandler {
                case GROQ:
                case KOKORO:
                case CARTESIA:
+               case FISH_AUDIO:
                   playEndpointTTS(player, text, verity);
             }
          }).whenComplete((answer, throwable) -> {

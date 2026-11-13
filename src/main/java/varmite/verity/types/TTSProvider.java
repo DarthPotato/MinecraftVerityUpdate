@@ -5,5 +5,6 @@ public enum TTSProvider {
    LOCAL,
    GROQ,
    KOKORO,
-   CARTESIA;
+   CARTESIA,
+   FISH_AUDIO;
 }

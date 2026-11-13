@@ -155,6 +155,24 @@ public class VerityConfigUI {
                      .build()
                )
                .option(
+                  Option.<String>createBuilder()
+                     .name(Component.literal("fish.audio API Key"))
+                     .description(OptionDescription.of(Component.literal("Your fish.audio API key (FISH_AUDIO provider)")))
+                     .binding("", VerityConfig.FISH_API_KEY, VerityConfig.FISH_API_KEY::set)
+                     .controller(StringControllerBuilder::create)
+                     .build()
+               )
+               .option(
+                  Option.<String>createBuilder()
+                     .name(Component.literal("fish.audio Voice ID"))
+                     .description(
+                        OptionDescription.of(Component.literal("The voice model ID from fish.audio (FISH_AUDIO provider).\nEmpty uses the default voice."))
+                     )
+                     .binding("", VerityConfig.FISH_VOICE_ID, VerityConfig.FISH_VOICE_ID::set)
+                     .controller(StringControllerBuilder::create)
+                     .build()
+               )
+               .option(
                   Option.<TTSLanguage>createBuilder()
                      .name(Component.literal("TTS Language"))
                      .description(OptionDescription.of(Component.literal("The language Verity speaks (Cartesia)")))
