@@ -45,10 +45,23 @@
 - Anything in-game: chat, tool calls, voice, mic, config screen, the hostile event in any mode.
 - fish.audio against the live API (no key).
 
+### 2026-11-13: owner playtest, library cleanup, tags
+
+**Done**
+- Owner playtested the trimmed build in `runClient` (world `test1`): box, Verity spawn and chat against Ollama work. `run/logs/latest.log` has no errors; replies took 2 to 6 seconds.
+- Tagged `baseline-1.20.1` (commit `aaaf633`, smoke-tested only, never played) and `baseline-1.20.1-trimmed` (commit `5958062`, the build the owner played).
+- Removed 16 bundled jars that only served the old built-in Gemini and Mistral clients: `langchain4j-google-genai`, `langchain4j-mistral-ai`, `genai-bundle`, `api-common`, both `google-auth-library` jars, `auto-value-annotations`, both `google-http-client` jars, `protobuf-java`, both `grpc` jars, both `opencensus` jars, `Java-WebSocket`, `javax.annotation-api`. 18 remain. Jar size is now 168 MB.
+- Verified the remaining set outside Minecraft: a chat with a tool call against the owner's Ollama succeeds through both the native and the OpenAI-compatible client with only those jars on the classpath.
+
+**Finding: thinking off breaks tool calls on qwen3.5:9b**
+- Same prompt, one tool, 4 runs each. Thinking on or unset: tool called 4 of 4 on both routes. Thinking off: tool called 1 of 4 on both routes, and the model invented an answer the other 3 times.
+- In game this shows up as Verity typing a face name ("happy_talking thanks...") instead of changing expression. `aiThink` still defaults to false as CLAUDE.md says; whether to flip the default is the owner's call.
+
 **Stubbed / TODO**
-- `HostileEvent.DEMON` is a stand-in until the demon is restored and ported.
-- Native Gemini and Mistral chat paths are gone, so `langchain4j-google-genai`, `langchain4j-mistral-ai`, `genai-bundle` and the Google/gRPC/protobuf/OpenCensus jars are bundled but unused. Removing them is the owner's call.
-- `baseline-1.20.1-trimmed` is not tagged until the owner's playtest passes.
+- `HostileEvent.DEMON` is a stand-in. Restoring and porting the demon is a definite TODO (owner, 2026-11-13).
+- Built-in provider choices for a public release are a definite TODO (owner, 2026-11-13). Today every provider is reached through the free-form endpoint. Publishing itself needs VarmiteYT's permission (see CLAUDE.md).
+- The model sometimes ignores the prompt's "no emojis, no markdown" rule. Nothing filters replies; a filter would be new behaviour and has not been asked for.
+- Stage 0 leftovers for the owner: test the built jar inside the existing Forge 1.20.1 modpack; voice and mic were not visible in the log.
 
 **Decisions the owner made (2026-11-12)**
 - `verity-6.0.0-beta.9.jar` is the intended build.
@@ -65,4 +78,4 @@
 - Do not override Ollama's context window (2026-11-13).
 
 **Open questions for the owner**
-- Drop the now-unused Gemini/Mistral libraries from the jar?
+- Flip the `aiThink` default to true, given the tool-call finding?

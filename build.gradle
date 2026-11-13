@@ -53,15 +53,15 @@ repositories {
         metadataSources { artifact() }
         content {
             includeGroup 'com.k2fsa.sherpa.onnx'
-            includeGroup 'varmite.verity.libs'
         }
     }
     // Owner's exact mod jars (GeckoLib, YACL) and the original Verity jar.
     flatDir { dir 'reference' }
 }
 
-// Third-party libraries Verity 6.0.0-beta.9 ships in META-INF/jarjar, at the exact
-// versions from its metadata.json. All of these are byte-identical to Maven Central.
+// Third-party libraries from Verity 6.0.0-beta.9's META-INF/jarjar that the trimmed build still
+// uses, at the exact versions from its metadata.json. The original shipped 16 more for its
+// built-in Gemini and Mistral clients (see baseline-1.20.1 for the full list).
 ext.bundledLibs = [
         'dev.langchain4j:langchain4j:1.18.0',
         'dev.langchain4j:langchain4j-core:1.18.1',
@@ -69,8 +69,6 @@ ext.bundledLibs = [
         'dev.langchain4j:langchain4j-http-client-jdk:1.18.0',
         'dev.langchain4j:langchain4j-open-ai:1.18.0',
         'dev.langchain4j:langchain4j-ollama:1.18.0',
-        'dev.langchain4j:langchain4j-mistral-ai:1.18.0',
-        'dev.langchain4j:langchain4j-google-genai:1.18.1-beta28',
         'com.fasterxml.jackson.core:jackson-annotations:2.22',
         'com.fasterxml.jackson.core:jackson-core:2.22.1',
         'com.fasterxml.jackson.core:jackson-databind:2.22.1',
@@ -79,27 +77,12 @@ ext.bundledLibs = [
         'com.knuddels:jtokkit:1.1.0',
         'org.apache.opennlp:opennlp-tools:2.5.9',
         'org.jspecify:jspecify:1.0.0',
-        'org.java-websocket:Java-WebSocket:1.6.0',
-        'javax.annotation:javax.annotation-api:1.3.2',
-        'com.google.api:api-common:2.45.0',
-        'com.google.auth:google-auth-library-credentials:1.33.0',
-        'com.google.auth:google-auth-library-oauth2-http:1.33.0',
-        'com.google.auto.value:auto-value-annotations:1.11.0',
-        'com.google.http-client:google-http-client:1.46.2',
-        'com.google.http-client:google-http-client-gson:1.46.2',
-        'com.google.protobuf:protobuf-java:3.25.5',
-        'io.grpc:grpc-api:1.70.0',
-        'io.grpc:grpc-context:1.70.0',
-        'io.opencensus:opencensus-api:0.31.1',
-        'io.opencensus:opencensus-contrib-http-util:0.31.1',
-        // Not on Maven Central, served from libs/: sherpa-onnx 1.13.3 (GitHub release jars)
-        // and the original author's shaded google-genai 1.62.0 bundle. Copied unmodified
-        // from the original jar.
+        // Not on Maven Central, served from libs/: sherpa-onnx 1.13.3 (GitHub release jars),
+        // copied unmodified from the original jar.
         'com.k2fsa.sherpa.onnx:sherpa-onnx:1.13.3',
         'com.k2fsa.sherpa.onnx:sherpa-onnx-native-lib-win-x64:1.13.3',
         'com.k2fsa.sherpa.onnx:sherpa-onnx-native-lib-linux-x64:1.13.3',
         'com.k2fsa.sherpa.onnx:sherpa-onnx-native-lib-osx-x64:1.13.3',
-        'varmite.verity.libs:genai-bundle:1.62.0',
 ]
 
 dependencies {
