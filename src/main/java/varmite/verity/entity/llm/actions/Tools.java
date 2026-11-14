@@ -3,6 +3,9 @@ package varmite.verity.entity.llm.actions;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -33,6 +36,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforgespi.language.IModInfo;
 import varmite.verity.entity.VerityState;
+import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.entity.llm.LLMUtility;
 import varmite.verity.entity.llm.store.memory.VerityMemoryManager;
 import varmite.verity.environment.items.ModItems;
@@ -221,6 +225,59 @@ public class Tools {
          this.server.getPlayerList().broadcastAll(new ClientboundStopSoundPacket(soundToStop, SoundSource.VOICE));
          return "Stopped the song.";
       });
+   }
+
+   // Owner request (2026-11-14): four lookups from beta.9 that 6.0.0 dropped, with clearer descriptions.
+   @Tool("List everything in the player's inventory. Use when they ask what they have or carry, or what they could make.")
+   List<String> get_player_inventory() {
+      return this.serverCall(() -> {
+         List<String> found = new ArrayList<>();
+
+         for (ItemStack stack : this.player.getInventory().getNonEquipmentItems()) {
+            if (!stack.isEmpty()) {
+               found.add(stack.getCount() + "x " + stack.getHoverName().getString());
+            }
+         }
+
+         return found.isEmpty() ? List.of("The inventory is empty.") : found;
+      });
+   }
+
+   @Tool("List the animals, villagers, players and other creatures within 32 blocks of the player. Monsters are already in your world info.")
+   String get_nearby_entities() {
+      return this.serverCall(() -> {
+         Map<String, Integer> counts = new LinkedHashMap<>();
+
+         for (LivingEntity e : this.level.getEntitiesOfClass(LivingEntity.class, this.player.getBoundingBox().inflate(32.0), e -> e != this.player && !(e instanceof VerityEntity))) {
+            counts.merge(e.getName().getString(), 1, Integer::sum);
+         }
+
+         if (counts.isEmpty()) {
+            return "Nothing alive within 32 blocks.";
+         }
+
+         List<String> parts = new ArrayList<>();
+         counts.forEach((name, n) -> parts.add(n + "x " + name));
+         return String.join(", ", parts);
+      });
+   }
+
+   @Tool("Get the coordinates of your own body. Use when someone asks where you are.")
+   String get_own_coords() {
+      return this.serverCall(() -> {
+         VerityEntity body = VerityState.verityEntity;
+         if (body == null || body.isRemoved()) {
+            return "Your body is in the player's inventory, so you are wherever the player is.";
+         }
+
+         BlockPos pos = body.blockPosition();
+         return "X=" + pos.getX() + " Y=" + pos.getY() + " Z=" + pos.getZ();
+      });
+   }
+
+   @Tool("Find ThatMob's old base, the place you used to live. Use when the player asks about it or about where you came from.")
+   String get_old_base_location() {
+      return this.serverCall(() -> LLMUtility.findOldBase(this.player));
    }
 
    @Tool("Put your body back into the player's inventory. Use when they tell you to get back in their inventory or pocket.")
