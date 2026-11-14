@@ -19,6 +19,8 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
@@ -183,23 +185,17 @@ public class LLMUtility {
          return "Error: I cant drop this item because it is too rare.";
       }
 
-      boolean bodyOut = VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved() && VerityState.verityEntity.level() == player.level();
-      double x = bodyOut ? VerityState.verityEntity.getX() : player.getX();
-      double y = bodyOut ? VerityState.verityEntity.getY() : player.getY();
-      double z = bodyOut ? VerityState.verityEntity.getZ() : player.getZ();
-      ItemStack dropStack = new ItemStack(foundItem, count);
-      ItemEntity droppedItem;
-      if (bodyOut) {
-         droppedItem = new ItemEntity(player.level(), x, y, z, dropStack);
-      } else {
-         // Port: Verity is being carried. Dropped at the player's feet, the item went straight into their inventory
-         // unseen, so it pops out in front of them and can be seen for a second before it is picked up.
-         Vec3 look = player.getLookAngle();
-         droppedItem = new ItemEntity(player.level(), x + look.x * 1.5, player.getEyeY() - 0.4, z + look.z * 1.5, dropStack);
-         droppedItem.setPickUpDelay(20);
+      // Port (owner's choice): items go straight into the player's inventory, in full stacks; only what does not fit lands at
+      // their feet. In 6.0.0 they were dropped where Verity's body was.
+      ItemStack sample = new ItemStack(foundItem);
+      String itemName = sample.getHoverName().getString();
+      int maxStack = Math.max(1, sample.getMaxStackSize());
+      boolean allFit = true;
+      for (int left = count; left > 0; left -= maxStack) {
+         allFit &= VerityState.giveOrDrop(player, new ItemStack(foundItem, Math.min(left, maxStack)));
       }
 
-      player.level().addFreshEntity(droppedItem);
-      return "Dropped " + count + "x " + dropStack.getHoverName().getString() + (bodyOut ? " where your body is." : " in front of the player.");
+      player.level().playSound(null, player.blockPosition(), SoundEvents.ITEM_PICKUP, SoundSource.PLAYERS, 0.4F, 1.4F);
+      return "Gave " + count + "x " + itemName + (allFit ? "; it is in the player's inventory." : "; their inventory was full, so some landed at their feet.");
    }
 }

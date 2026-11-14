@@ -14,7 +14,7 @@ public final class OllamaContext {
    public static int contextFor(String model, long promptChars, boolean thinking) {
       // Port fix: reserve the whole reply budget LLMBuilder allows (numPredict), plus slack for the estimate, so a long
       // reply is never cut off by the context window.
-      long needed = (long)(promptChars / 3.5) + (thinking ? 1536 + 512 : 1024 + 256);
+      long needed = (long)(promptChars / 3.5) + (thinking ? 1024 + 512 : 1024 + 256);
       int size = SIZES[SIZES.length - 1];
 
       for (int candidate : SIZES) {
