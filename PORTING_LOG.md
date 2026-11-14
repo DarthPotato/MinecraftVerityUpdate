@@ -141,3 +141,26 @@
   player's game), zipped. Attached to a private GitHub release; `dist/` keeps a local copy (not in git).
 - `README.md` added.
 - Branches: `neoforge-26.3` (default) and `neoforge-1.21.1`. The old `master` and `stage2-26.3` names are gone.
+
+## Owner requests after release (2026-11-14): demon and house on 1.21.1
+
+The owner asked for the 26.3 additions on this branch too. Owner decisions and details are in the 26.3 branch's log;
+the behaviour here is the same.
+
+**Changed**
+- Demon restored from `parked/demon` (now gone) and ported to 1.21.1 and GeckoLib 4.9.3: synced-data builder, step
+  height as the `STEP_HEIGHT` attribute, `getDefaultDimensions`, `PathfindingContext` path types, NeoForge's
+  `GLASS_BLOCKS` tag, the 1.21 vertex builder in the renderer. GeckoLib 4 still has the bone hooks the original used,
+  so the renderer and the head-look are the original code with only those API changes.
+- `hostileEvent = DEMON` spawns the demon, staring at the player (forced midnight stays cut). Its death or removal ends
+  the event. `canCrash` is back, default off.
+- `build_house` action (door side facing the player, same checks and cooldown as 26.3) and the dev-only
+  `/verity_dev_ask`.
+
+**Verified (dev server and dev client)**
+- The demon renders with its full poly-mesh body (15 bones). The DEMON event spawned it at day 5 and killing it gave
+  "The darkness... it's gone." A provoked demon reached a player boxed in stone. No Verity errors.
+- Verity built two houses on request, each with the door toward the player.
+- Verity's structures place with `/place`. Placing the lookout logs a vanilla
+  `Block-attached entity at invalid position` error: an item frame or painting in the template still carries its
+  position from the world it was saved in. Vanilla moves it to the right spot anyway, and 1.20.1 logged the same thing.
