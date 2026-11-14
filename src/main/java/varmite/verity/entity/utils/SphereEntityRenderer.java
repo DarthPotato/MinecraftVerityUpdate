@@ -67,12 +67,18 @@ public class SphereEntityRenderer extends EntityRenderer<VerityEntity, VerityRen
          state.viewerZ = Mth.lerp(partialTick, player.zo, player.getZ());
       }
 
-      int hueValue = VerityConfig.COLOR.get();
-      state.red = 255;
-      state.green = 255;
-      state.blue = 255;
-      if (hueValue != 0) {
-         int rgb = Mth.hsvToRgb(hueValue / 360.0F, 1.0F, 1.0F);
+      // 6.0.0: the default tint is yellow (the face textures are neutral now); values above 360 are packed RGB.
+      int colorConfig = VerityConfig.COLOR.get();
+      if (colorConfig == 0) {
+         state.red = 255;
+         state.green = 225;
+         state.blue = 30;
+      } else if (colorConfig > 360) {
+         state.red = colorConfig >> 16 & 0xFF;
+         state.green = colorConfig >> 8 & 0xFF;
+         state.blue = colorConfig & 0xFF;
+      } else {
+         int rgb = Mth.hsvToRgb(colorConfig / 360.0F, 1.0F, 1.0F);
          state.red = rgb >> 16 & 0xFF;
          state.green = rgb >> 8 & 0xFF;
          state.blue = rgb & 0xFF;

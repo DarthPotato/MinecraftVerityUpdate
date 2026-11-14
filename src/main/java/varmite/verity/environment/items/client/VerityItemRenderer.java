@@ -71,17 +71,21 @@ public class VerityItemRenderer implements SpecialModelRenderer<String> {
       try {
          poseStack.translate(0.5, 0.5, 0.5);
          poseStack.scale(0.5F * stretchXZ, 0.5F * stretchY, 0.5F * stretchXZ);
-         int hueValue = VerityConfig.COLOR.get();
+         int colorConfig = (Integer)VerityConfig.COLOR.get();
          int a = 255;
          int r;
          int g;
          int b;
-         if (hueValue == 0) {
+         if (colorConfig == 0) {
             r = 255;
-            g = 255;
-            b = 255;
+            g = 225;
+            b = 30;
+         } else if (colorConfig > 360) {
+            r = colorConfig >> 16 & 0xFF;
+            g = colorConfig >> 8 & 0xFF;
+            b = colorConfig & 0xFF;
          } else {
-            int rgb = Mth.hsvToRgb(hueValue / 360.0F, 1.0F, 1.0F);
+            int rgb = Mth.hsvToRgb(colorConfig / 360.0F, 1.0F, 1.0F);
             r = rgb >> 16 & 0xFF;
             g = rgb >> 8 & 0xFF;
             b = rgb & 0xFF;

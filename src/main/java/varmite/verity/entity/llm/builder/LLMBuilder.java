@@ -2,6 +2,7 @@ package varmite.verity.entity.llm.builder;
 
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaChatRequestParameters;
 import dev.langchain4j.model.ollama.OllamaChatModel.OllamaChatModelBuilder;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel.OpenAiChatModelBuilder;
@@ -20,8 +21,9 @@ import varmite.verity.VerityConfig;
  * Builds the chat model from the free-form endpoint, API key and model in the config. Every
  * endpoint is treated as OpenAI-compatible, with one exception: when the endpoint turns out to
  * be an Ollama server, the request goes through Ollama's native API on the same server, because
- * that is where the thinking toggle is a plain on/off switch. The context window is never set
- * here: the Ollama server's own setting applies.
+ * that is where the thinking toggle is a plain on/off switch. On Ollama, 6.0.0's request settings apply: thinking is
+ * only sent to models that can think, the context window is sized to the prompt, replies are capped, and the model
+ * stays loaded for 30 minutes between requests.
  */
 public class LLMBuilder {
    private static final Map<String, Boolean> OLLAMA_ENDPOINTS = new ConcurrentHashMap<>();
@@ -31,6 +33,10 @@ public class LLMBuilder {
    private String endpoint;
    private String apiKey;
    private boolean thinking = false;
+   /** Ollama only: null leaves the think flag out (the model can't think). */
+   private Boolean ollamaThink;
+   /** Ollama only: context window in tokens, 0 to leave the server's setting. */
+   private int contextSize;
 
    public LLMBuilder setModel(String model) {
       this.model = model;
@@ -52,13 +58,28 @@ public class LLMBuilder {
       return this;
    }
 
+   public LLMBuilder setOllamaThink(Boolean think) {
+      this.ollamaThink = think;
+      return this;
+   }
+
+   public LLMBuilder setContextSize(int contextSize) {
+      this.contextSize = contextSize;
+      return this;
+   }
+
    public ChatModel build() {
       if (isOllama(this.endpoint)) {
          OllamaChatModelBuilder ollama = OllamaChatModel.builder();
          ollama.baseUrl(serverRoot(this.endpoint));
          ollama.modelName(this.model);
-         ollama.think(this.thinking);
-         ollama.temperature(0.8);
+         ollama.think(this.ollamaThink);
+         if (this.contextSize > 0) {
+            ollama.numCtx(this.contextSize);
+         }
+
+         ollama.numPredict(Boolean.TRUE.equals(this.ollamaThink) ? 3072 : 1024);
+         ollama.defaultRequestParameters(OllamaChatRequestParameters.builder().keepAlive(1800).build());
          ollama.timeout(REQUEST_TIMEOUT);
          ollama.logResponses(VerityConfig.DEV_MODE.get());
          // A local model that timed out will only time out again, while the player waits.
@@ -114,7 +135,7 @@ public class LLMBuilder {
    }
 
    /** The endpoint without a trailing slash or "/v1": where Ollama's native API lives. */
-   private static String serverRoot(String endpoint) {
+   public static String serverRoot(String endpoint) {
       String root = endpoint.trim();
 
       while (root.endsWith("/")) {
@@ -125,7 +146,7 @@ public class LLMBuilder {
    }
 
    /** Asks the server for Ollama's version route. The answer is cached once the server has replied. */
-   private static boolean isOllama(String endpoint) {
+   public static boolean isOllama(String endpoint) {
       Boolean known = OLLAMA_ENDPOINTS.get(endpoint);
       if (known != null) {
          return known;

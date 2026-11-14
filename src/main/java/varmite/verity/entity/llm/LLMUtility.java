@@ -1,6 +1,7 @@
 package varmite.verity.entity.llm;
 
 import com.mojang.datafixers.util.Pair;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Map.Entry;
 import net.minecraft.core.BlockPos;
@@ -163,7 +164,7 @@ public class LLMUtility {
       }
 
       if (foundItem == null || foundItem == Items.AIR) {
-         String searchTarget = item_id.contains(":") ? item_id.split(":")[1] : item_id;
+         String searchTarget = (item_id.contains(":") ? item_id.split(":")[1] : item_id).trim().toLowerCase(Locale.ROOT).replace(' ', '_');
 
          for (Entry<ResourceKey<Item>, Item> entry : BuiltInRegistries.ITEM.entrySet()) {
             if (entry.getKey().identifier().getPath().equals(searchTarget)) {
@@ -173,17 +174,21 @@ public class LLMUtility {
          }
       }
 
-      if (foundItem == null || foundItem == Items.AIR || VerityState.verityEntity == null) {
+      if (foundItem == null || foundItem == Items.AIR) {
          return "Error: I searched all mods but could not find an item named '" + item_id + "'.";
-      } else if (canDropItem(foundItem)) {
-         ItemStack dropStack = new ItemStack(foundItem, count);
-         ItemEntity droppedItem = new ItemEntity(
-            player.level(), VerityState.verityEntity.getX(), VerityState.verityEntity.getY(), VerityState.verityEntity.getZ(), dropStack
-         );
-         player.level().addFreshEntity(droppedItem);
-         return "Successfully dropped " + count + " of " + foundItem.getDescriptionId();
-      } else {
+      }
+
+      if (!canDropItem(foundItem)) {
          return "Error: I cant drop this item because it is too rare.";
       }
+
+      boolean bodyOut = VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved() && VerityState.verityEntity.level() == player.level();
+      double x = bodyOut ? VerityState.verityEntity.getX() : player.getX();
+      double y = bodyOut ? VerityState.verityEntity.getY() : player.getY();
+      double z = bodyOut ? VerityState.verityEntity.getZ() : player.getZ();
+      ItemStack dropStack = new ItemStack(foundItem, count);
+      ItemEntity droppedItem = new ItemEntity(player.level(), x, y, z, dropStack);
+      player.level().addFreshEntity(droppedItem);
+      return "Dropped " + count + "x " + dropStack.getHoverName().getString() + " at the player's feet.";
    }
 }

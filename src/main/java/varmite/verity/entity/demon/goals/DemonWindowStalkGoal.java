@@ -1,7 +1,6 @@
 package varmite.verity.entity.demon.goals;
 
 import java.util.EnumSet;
-import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -10,8 +9,8 @@ import net.minecraft.world.entity.ai.goal.Goal;
 import net.minecraft.world.entity.ai.goal.Goal.Flag;
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
+import varmite.verity.entity.demon.DemonSpawnPlacement;
 import varmite.verity.entity.demon.VerityDemonEntity;
 
 public class DemonWindowStalkGoal extends Goal {
@@ -90,20 +89,14 @@ public class DemonWindowStalkGoal extends Goal {
    }
 
    private void teleportAway() {
-      for (int i = 0; i < 15; i++) {
-         double distance = 16.0 + this.demon.getRandom().nextDouble() * 16.0;
-         double angle = this.demon.getRandom().nextDouble() * 2.0 * Math.PI;
-         double newX = this.demon.getX() + Math.cos(angle) * distance;
-         double newZ = this.demon.getZ() + Math.sin(angle) * distance;
-         int newY = this.demon.level().getHeight(Types.MOTION_BLOCKING_NO_LEAVES, (int)newX, (int)newZ);
-         BlockPos groundPos = BlockPos.containing(newX, newY - 1, newZ);
-         if (this.demon.level().getFluidState(groundPos).isEmpty()) {
-            this.demon.teleportTo(newX, newY, newZ);
-            this.demon.getNavigation().stop();
-            return;
+      if (this.demon.level() instanceof ServerLevel level && this.targetPlayer != null) {
+         DemonSpawnPlacement.Placement placement = DemonSpawnPlacement.find(level, this.targetPlayer, this.demon);
+         if (placement != null) {
+            placement.apply(this.demon);
          }
-      }
 
-      this.demon.discard();
+         this.demon.getNavigation().stop();
+         this.demon.startSpawnFootsteps(this.targetPlayer);
+      }
    }
 }

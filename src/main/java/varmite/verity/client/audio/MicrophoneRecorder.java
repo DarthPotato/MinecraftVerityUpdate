@@ -97,6 +97,55 @@ public class MicrophoneRecorder {
       return Math.min(1.0, rms / 32767.0 * 4.0);
    }
 
+   private static byte[] normalizePcmAudio(byte[] pcmData) {
+      if (pcmData != null && pcmData.length >= 2) {
+         int max = 0;
+
+         for (int i = 0; i < pcmData.length - 1; i += 2) {
+            short sample = (short)(pcmData[i + 1] << 8 | pcmData[i] & 0xFF);
+            int abs = Math.abs(sample);
+            if (abs > max) {
+               max = abs;
+            }
+         }
+
+         if (max < 80) {
+            return pcmData;
+         }
+
+         float targetMax = 26000.0F;
+         float multiplier = targetMax / max;
+         if (multiplier < 1.0F) {
+            multiplier = 1.0F;
+         }
+
+         if (multiplier > 5.0F) {
+            multiplier = 5.0F;
+         }
+
+         byte[] boosted = new byte[pcmData.length];
+
+         for (int i = 0; i < pcmData.length - 1; i += 2) {
+            short sample = (short)(pcmData[i + 1] << 8 | pcmData[i] & 0xFF);
+            int newSample = Math.round(sample * multiplier);
+            if (newSample > 32767) {
+               newSample = 32767;
+            }
+
+            if (newSample < -32768) {
+               newSample = -32768;
+            }
+
+            boosted[i] = (byte)(newSample & 0xFF);
+            boosted[i + 1] = (byte)(newSample >> 8 & 0xFF);
+         }
+
+         return boosted;
+      } else {
+         return pcmData;
+      }
+   }
+
    public void stopRecordingAndTranscribe(Consumer<String> onTranscriptionComplete) {
       if (!this.isRecording) {
          if (onTranscriptionComplete != null) {
@@ -119,7 +168,7 @@ public class MicrophoneRecorder {
                }
             }
 
-            byte[] audioData = this.audioStream.toByteArray();
+            byte[] audioData = normalizePcmAudio(this.audioStream.toByteArray());
             System.out.println("[Verity Audio] Recording stopped. Captured " + audioData.length + " bytes. Decoding...");
             return TTSHandler.transcribeAudio(audioData, this.getAudioFormat());
          }).thenAccept(transcribedText -> {
@@ -150,7 +199,8 @@ public class MicrophoneRecorder {
          }
       }
 
-      System.out.println("[Verity Audio] Recording stopped. Captured " + this.audioStream.size() + " bytes.");
-      return this.audioStream.toByteArray();
+      byte[] raw = this.audioStream.toByteArray();
+      System.out.println("[Verity Audio] Recording stopped. Captured " + raw.length + " bytes.");
+      return normalizePcmAudio(raw);
    }
 }

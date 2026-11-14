@@ -367,7 +367,7 @@ public class VerityConfigUI {
          .option(
             Option.<Boolean>createBuilder()
                .name(Component.literal("Thinking Mode"))
-               .description(OptionDescription.of(Component.literal("(On supported models)\nMakes the AI think longer before answering")))
+               .description(OptionDescription.of(Component.literal("(On supported models)\nMakes the AI think longer before answering.\n\nLocal models: only applied to models that can think. qwen3 and qwen3.5 need it on to use their tools reliably; models without thinking are fast either way.")))
                .binding(true, VerityConfig.AI_THINK, VerityConfig.AI_THINK::set)
                .controller(TickBoxControllerBuilder::create)
                .build()

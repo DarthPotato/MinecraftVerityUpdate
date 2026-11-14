@@ -59,6 +59,9 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
+import varmite.verity.entity.demon.DemonSpawnPlacement;
+import varmite.verity.entity.demon.VerityDemonEntity;
+import varmite.verity.entity.veritybox.BoxEntity;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.HostileEvents;
 import varmite.verity.event.ModEvents;
@@ -80,6 +83,7 @@ public class VerityEntity extends PathfinderMob {
    public int pleadingTimer = -1;
    private int consecutiveBadMessages = 0;
    private boolean hasTransformed = false;
+   private int nextDemonSpawnAttemptTick;
    private int talkTicks = 0;
    private int talkEndTick = -1;
    public int animationTicks = 140;
@@ -152,11 +156,7 @@ public class VerityEntity extends PathfinderMob {
 
    public void triggerBoxDrop() {
       if (!this.level().isClientSide()) {
-         this.level().getServer().execute(() -> {
-            WorldSpawnData data = WorldSpawnData.get((ServerLevel)this.level());
-            data.verityKarma = 10.0F;
-            data.setDirty();
-         });
+         this.level().getServer().execute(() -> ModEvents.setAndSyncKarma((ServerLevel)this.level(), 10.0F));
          this.setVariant("hurt");
          this.animationTicks = 0;
          this.entityData.set(BOUNCE_START_TICK, 1);
@@ -368,6 +368,10 @@ public class VerityEntity extends PathfinderMob {
          return false;
       }
 
+      if (this.tickCount < this.nextDemonSpawnAttemptTick) {
+         return false;
+      }
+
       ServerLevel serverLevel = (ServerLevel)this.level();
       WorldSpawnData data = WorldSpawnData.get(serverLevel);
       if (data.hostileResolved || data.hasLiveDemon()) {
@@ -391,12 +395,28 @@ public class VerityEntity extends PathfinderMob {
          return false;
       }
 
-      BlockPos spawnPos = this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition());
-      Entity standIn = mode == HostileEvent.DEMON
-         ? ModEntities.VERITY_DEMON_ENTITY.get().spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION)
-         : EntityTypes.WITHER.spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION);
-      if (standIn == null) {
-         return false;
+      Entity standIn;
+      if (mode == HostileEvent.DEMON) {
+         // 6.0.0: try at most every 5 seconds, somewhere the player can see it but not right next to anyone.
+         this.nextDemonSpawnAttemptTick = this.tickCount + 100;
+         DemonSpawnPlacement.Placement placement = DemonSpawnPlacement.find(serverLevel, player, null);
+         if (placement == null) {
+            return false;
+         }
+
+         VerityDemonEntity demon = ModEntities.VERITY_DEMON_ENTITY.get()
+            .create(serverLevel, placement::apply, placement.pos(), EntitySpawnReason.CONVERSION, false, false);
+         if (demon == null || !serverLevel.addFreshEntity(demon)) {
+            return false;
+         }
+
+         demon.startSpawnFootsteps(player);
+         standIn = demon;
+      } else {
+         standIn = EntityTypes.WITHER.spawn(serverLevel, this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition()), EntitySpawnReason.CONVERSION);
+         if (standIn == null) {
+            return false;
+         }
       }
 
       this.markHostileEventStarted(player, data, provoked);

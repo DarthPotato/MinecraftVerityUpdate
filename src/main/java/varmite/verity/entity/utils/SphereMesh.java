@@ -2,6 +2,10 @@ package varmite.verity.entity.utils;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -11,6 +15,8 @@ import net.minecraft.util.Mth;
 public final class SphereMesh {
    private static final float TEXTURE_SCALE = 1.3F;
    private static final float TEXTURE_SQUISH_Y = 0.9F;
+   private static final String FACE_DIR = "textures/entity/";
+   private static final Map<Identifier, Optional<Identifier>> TEETH_OVERLAYS = new ConcurrentHashMap<>();
 
    private SphereMesh() {
    }
@@ -31,6 +37,30 @@ public final class SphereMesh {
    ) {
       collector.submitCustomGeometry(
          poseStack, RenderTypes.entityCutout(texture), (pose, consumer) -> drawSphere(pose, consumer, radius, latitudes, longitudes, packedLight, r, g, b, a)
+      );
+      teethOverlay(texture)
+         .ifPresent(
+            overlay -> collector.submitCustomGeometry(
+               poseStack,
+               RenderTypes.entityTranslucent(overlay),
+               (pose, consumer) -> drawSphere(pose, consumer, radius * 1.002F, latitudes, longitudes, packedLight, 255, 255, 255, a)
+            )
+         );
+   }
+
+   /** 6.0.0: some faces have a teeth layer in textures/entity/teeth/, drawn untinted just above the face. */
+   private static Optional<Identifier> teethOverlay(Identifier texture) {
+      return TEETH_OVERLAYS.computeIfAbsent(
+         texture,
+         tex -> {
+            String path = tex.getPath();
+            if (!path.startsWith(FACE_DIR)) {
+               return Optional.empty();
+            }
+
+            Identifier overlay = Identifier.fromNamespaceAndPath(tex.getNamespace(), FACE_DIR + "teeth/" + path.substring(FACE_DIR.length()));
+            return Minecraft.getInstance().getResourceManager().getResource(overlay).map(resource -> overlay);
+         }
       );
    }
 
