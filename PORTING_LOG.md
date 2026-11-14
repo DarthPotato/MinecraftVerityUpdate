@@ -274,3 +274,67 @@ Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerity
 - The chase music and jumpscare on a PC with audio, and the demon in multiplayer. The live server still runs the
   earlier jar and has `hostileEvent = OFF`.
 - trueDarkness on 26.3 is still parked (`parked/truedarkness`).
+
+## Verity JE 6.0.0 merged in (2026-11-14, night)
+
+The owner asked what the full 6.0.0 release (Modrinth, 2026-10-23) has over 6.0.0-beta.9, to merge what is needed,
+and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.0.0.
+
+**How**
+- 6.0.0 was downloaded from Modrinth (sha1 `3deeceeb614f...` matches the listing), remapped with ForgeGradle and
+  decompiled with the same Vineflower settings as a fresh beta.9 decompile. The beta.9 to 6.0.0 difference was merged
+  onto the Stage 0 source as one commit on the new `upstream-6.0.0` branch (off `baseline-1.20.1`; it compiles on
+  Forge 47.4.29), then cherry-picked onto both port branches and resolved by hand.
+- Most JSON differences in the jar were line endings only and were left out. The demon model, animation and mesh are
+  unchanged in content.
+
+**What 6.0.0 changed, and what the port took**
+- AI (taken): a new prompt (`prompts/verity.xml`) with the player's surroundings (position, biome, time, weather,
+  light, health, armour, effects, what they look at, nearby monsters, where Verity's body is) and the saved memories
+  written into it; replies carry inline `[face]` and `[sound: id]` tags that set Verity's face and play sounds, so
+  the old expression and sound tools are gone; `<think>` blocks and assistant filler are stripped; tool calls are
+  pruned from the saved history; memory window 25; 19 tools instead of 41 (getters replaced by the world context;
+  new `blast_monsters` and `place_torch`); misheard "Verity" (verdi, variety, ...) corrected in prompts and voice
+  transcripts; empty replies show "...".
+- Ollama (taken, on the port's free-form endpoint): thinking is only sent to models that can think, tools are only
+  offered to models that support them (from `/api/show`), the context window is sized to the prompt (8K upwards,
+  never shrinking), replies are capped (1024 tokens, 3072 with thinking), the model stays loaded for 30 minutes, and
+  it is loaded when a server starts. 6.0.0 warms the model up at mod setup; that would load it on every player's PC,
+  so the port does it on server start instead. The 180 s timeout and the endpoint detection stay.
+- Demon (taken): a new spawn placement that looks for a spot 16 to 32 blocks away that the player can see, not next
+  to anyone (retried every 5 s), five footstep sounds as it arrives, a ray-clip line-of-sight check through glass and
+  leaves, and the window-stalk teleport uses the same placement. Forced midnight stays cut; WITHER keeps the old spot.
+- While the demon is loose, Verity's replies are spoken by the demon and shown in dark red (taken; on 26.3 through
+  Host Mode).
+- Taken: `/verityface <face>` (op), a welcome-back line from Verity when a player logs in, the abandonment tracker
+  (an enderman sound and a line in chat when a player leaves Verity alone for 5 minutes), karma sync on respawn and
+  dimension change, microphone gain normalisation and 5 ticks of recording after the key is released, a yellow
+  default tint (`colorHue = 0`) with new face textures and teeth overlays, Whisper STT prompt and temperature.
+- Not taken (owner to decide):
+  - the one-click Ollama installer and model manager: setup screen, uninstall screen, download HUD and keybind,
+    archive extractor and the `aircompressor` library. It downloads and runs programs on the player's PC and is
+    built for singleplayer; the server setup does not need it.
+  - removing the music discs: 6.0.0 dropped both discs, their sounds and the favourite-song advancement and tools.
+    They are still in the port, with the song tools.
+- Not taken on purpose: 6.0.0's `builder.pop()` fix in the config. It moves every setting under a new section, so
+  existing config files (the owner's server's fish.audio key and Host Mode settings) would reset to defaults.
+
+**Port fix found while testing**
+- After a tool call, qwen3.5 on Ollama often returns an empty reply with the spoken line in the thinking field, and
+  Verity said "..." (about half of tool-using requests). An empty reply now falls back to the thinking text when it
+  is short and starts with a `[tag]`, as replies are told to; real reasoning never does. Thinking is kept out of the
+  saved history.
+
+**Verified (dev server and client, both versions)**
+- Model warm-up at server start; plain chat replies without tags; `give_item`, `place_torch`, `add_to_memory` and
+  `build_house` tool calls; the fallback recovered leaked replies, including one with a made-up `[talking]` tag.
+- The yellow tint and the teeth overlays render (on 26.3 as a second translucent geometry submit); `/verityface`.
+- The DEMON event spawns the demon with the new placement; killing it ends the event.
+- No Verity errors in either log.
+
+**Naming**
+- Jars are now `verity-6.0.0-neoforge-<mc>-port.jar`; the version shown in game is 6.0.0.
+
+**Not verified**
+- The welcome-back greeting and the abandonment tracker in real play, two players at once, voice on a PC with audio,
+  the mic.
