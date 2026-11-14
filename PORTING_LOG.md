@@ -443,4 +443,18 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
   as well. All of them now use `VerityState.giveOrDrop`: into the inventory, or dropped at the player's feet, where
   the item turns back into Verity a second later. Recovery on the live world: `/give <player> verity:verity_item`
   (memories, karma and chat history are kept in the world, not in the item).
+- `/give <player> verity:verity_item` gave two (owner, Logan). /give drops a display-only copy (`makeFakeItem`: never
+  pickable, expires next tick); 6.0.0's "don't let me despawn" rescue (ItemExpireEvent) fired on it and gave the nearest
+  player another Verity. Items that cannot be picked up are skipped now.
+- Separate karma for each player (owner decision, 2026-11-14, after Logan asked for it; the lava accident had brought
+  the demon down on both players). `Karma` keeps a value per player in `WorldSpawnData.playerKarma`; `verityKarma` is
+  the starting value for players without one, so existing worlds start everyone at the old shared value.
+  - Per player: the karma tools, the system prompt's `current_karma` (mood, secrets), give_item refusals, the karma
+    advancements, `/changekarma` (your own), the karma bar.
+  - Nearest player: Verity burning (-2), the lava rescue (-1); the player rescued from cactus/explosions pays as before.
+  - Everyone online: being left alone (-1). Everyone: the box at the start (10) and the demon defeated (20).
+  - No player (Verity talking on his own): the average of the players online.
+  - The day-count hostile event never depended on karma (its check is `karma < 9000`); unchanged. The provoked event is
+    started by the AI through `transform_next_day`; unchanged.
+  - Prompt: `karma_scale` now says it is the relationship with the player talking.
 

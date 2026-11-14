@@ -29,6 +29,12 @@ The `neoforge-1.21.1` branch has the 1.21.1 build. `PORTING_LOG.md` records ever
 - The music discs, which 6.0.0 removed, are still here (owner's choice), and four lookups 6.0.0 dropped are back:
   the player's full inventory, creatures nearby, Verity's own coordinates and ThatMob's old base.
 - A reply that qwen3.5 puts in Ollama's thinking field by mistake is recovered instead of showing "...".
+- Karma is per player (owner's choice for multiplayer): each player has their own karma bar, and Verity's mood, item
+  refusals and secrets follow the karma of whoever he is dealing with. Burning costs the nearest player, being left
+  alone costs everyone online, and the box at the start and defeating the demon reset everyone. In 6.0.0 the whole
+  world shared one karma.
+- Verity is never deleted when a player's inventory is full (he lands at their feet), and `/give` no longer hands out
+  two of him.
 
 ## Dependencies
 
@@ -99,7 +105,7 @@ In singleplayer or when you "Open to LAN", your own game is the server, so your 
 4. **Players**: the same NeoForge version with Verity, GeckoLib and YACL. Nothing to set up for the AI. Everyone
    must run the same Verity jar as the server.
 
-There is one Verity per world, shared by all players (karma, memory and chat history included).
+There is one Verity per world, shared by all players (memory and chat history included); karma is per player.
 
 ### Local AI Setup
 
