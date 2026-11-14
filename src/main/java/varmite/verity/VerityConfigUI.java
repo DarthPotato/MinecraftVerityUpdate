@@ -1,5 +1,8 @@
 package varmite.verity;
 
+import net.minecraft.client.Minecraft;
+import varmite.verity.client.gui.OllamaSetupScreen;
+import dev.isxander.yacl3.api.ButtonOption;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
@@ -126,7 +129,7 @@ public class VerityConfigUI {
                )
                .build()
          )
-         .category(createAiCategory())
+         .category(createAiCategory(previousScreen))
          .category(
             ConfigCategory.createBuilder()
                .name(Component.literal("Voice Settings"))
@@ -333,9 +336,29 @@ public class VerityConfigUI {
          .generateScreen(previousScreen);
    }
 
-   private static ConfigCategory createAiCategory() {
+   private static ConfigCategory createAiCategory(Screen previousScreen) {
       return ConfigCategory.createBuilder()
          .name(Component.literal("AI Settings"))
+         .option(
+            ButtonOption.createBuilder()
+               .name(Component.literal("Local AI Setup (Ollama)"))
+               .text(Component.literal("Open"))
+               .description(
+                  OptionDescription.of(
+                     Component.literal(
+                        "Run Verity's AI on this PC: free, private, no API key.\n\nInstalls Ollama and downloads a model with one click, and lists the Ollama models already on this computer. On a server, the AI runs on the server, so set Ollama up there instead."
+                     )
+                  )
+               )
+               .action((screen, option) -> {
+                  if (screen.pendingChanges()) {
+                     screen.finishOrSave();
+                  }
+
+                  Minecraft.getInstance().gui.setScreen(new OllamaSetupScreen(() -> createYACLScreen(previousScreen)));
+               })
+               .build()
+         )
          .option(
             Option.<String>createBuilder()
                .name(Component.literal("Endpoint URL"))

@@ -12,6 +12,7 @@
   "category.verity.keys": "Verity Mod",
   "key.category.verity.keys": "Verity Mod",
   "key.verity.cycle_mic": "Cycle Selected Mic",
+  "key.verity.toggle_ollama_progress": "Show/Hide Ollama Download Progress",
 
   "entity.verity.box": "Box",
   "entity.verity.verity": "Verity™",

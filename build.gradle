@@ -78,6 +78,7 @@ ext.bundledLibs = [
         'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.22.1',
         'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.22.1',
         'com.knuddels:jtokkit:1.1.0',
+        'io.airlift:aircompressor:0.27',
         'org.apache.opennlp:opennlp-tools:2.5.9',
         'org.jspecify:jspecify:1.0.0',
         // Not on Maven Central, served from libs/: sherpa-onnx 1.13.3 (GitHub release jars),

@@ -17,11 +17,13 @@ public class KeybindRegistry {
       "key.verity.push_to_talk", KeyConflictContext.IN_GAME, InputConstants.Type.KEYBOARD, 86, CATEGORY
    );
    public static final KeyMapping CYCLE_MIC = new KeyMapping("key.verity.cycle_mic", KeyConflictContext.IN_GAME, InputConstants.Type.KEYBOARD, 77, CATEGORY);
+   public static final KeyMapping TOGGLE_OLLAMA_PROGRESS = new KeyMapping("key.verity.toggle_ollama_progress", KeyConflictContext.IN_GAME, InputConstants.Type.KEYBOARD, 79, CATEGORY);
 
    @SubscribeEvent
    public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
       event.registerCategory(CATEGORY);
       event.register(PUSH_TO_TALK);
       event.register(CYCLE_MIC);
+      event.register(TOGGLE_OLLAMA_PROGRESS);
    }
 }

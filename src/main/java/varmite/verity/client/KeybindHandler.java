@@ -7,6 +7,7 @@ import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import varmite.verity.client.audio.MicrophoneManager;
+import varmite.verity.client.gui.OllamaProgressHud;
 import varmite.verity.client.audio.MicrophoneRecorder;
 import varmite.verity.client.audio.TTSHandler;
 
@@ -29,6 +30,10 @@ public class KeybindHandler {
       if (KeybindRegistry.PUSH_TO_TALK != null && KeybindRegistry.CYCLE_MIC != null) {
          if (KeybindRegistry.CYCLE_MIC.consumeClick()) {
             MicrophoneManager.cycleMicrophone();
+         }
+
+         while (KeybindRegistry.TOGGLE_OLLAMA_PROGRESS.consumeClick()) {
+            OllamaProgressHud.toggle();
          }
 
          boolean isKeyDown = KeybindRegistry.PUSH_TO_TALK.isDown();
