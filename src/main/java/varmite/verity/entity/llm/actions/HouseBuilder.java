@@ -16,6 +16,7 @@ import net.minecraft.world.RandomizableContainer;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.JigsawBlock;
 import net.minecraft.world.level.block.Mirror;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -69,7 +70,7 @@ public final class HouseBuilder {
       StructureTemplate template = found.get();
       Direction facing = player.getDirection();
       StructurePlaceSettings settings = new StructurePlaceSettings()
-         .setRotation(rotationFacing(facing))
+         .setRotation(rotationFacing(template, facing))
          .setMirror(Mirror.NONE)
          .setIgnoreEntities(true)
          .addProcessor(JigsawReplacementProcessor.INSTANCE);
@@ -142,8 +143,24 @@ public final class HouseBuilder {
       }
    }
 
-   /** Turns the house to match the way the player is looking. */
-   private static Rotation rotationFacing(Direction facing) {
+   /**
+    * Turns the house so its door side faces the player. Village houses mark their street side, where the door is, with a
+    * jigsaw block pointing out of the house. A template without one just turns with the player.
+    */
+   private static Rotation rotationFacing(StructureTemplate template, Direction facing) {
+      Direction towardPlayer = facing.getOpposite();
+
+      for (StructureTemplate.StructureBlockInfo info : template.filterBlocks(BlockPos.ZERO, new StructurePlaceSettings(), Blocks.JIGSAW)) {
+         Direction front = JigsawBlock.getFrontFacing(info.state());
+         if (front.getAxis().isHorizontal()) {
+            for (Rotation rotation : Rotation.values()) {
+               if (rotation.rotate(front) == towardPlayer) {
+                  return rotation;
+               }
+            }
+         }
+      }
+
       return switch (facing) {
          case EAST -> Rotation.CLOCKWISE_90;
          case SOUTH -> Rotation.CLOCKWISE_180;
