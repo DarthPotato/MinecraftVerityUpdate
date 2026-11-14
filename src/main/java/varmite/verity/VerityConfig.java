@@ -32,6 +32,7 @@ public class VerityConfig {
    public static final ConfigValue<String> TTS_API_KEY;
    public static final ConfigValue<String> FISH_API_KEY;
    public static final ConfigValue<String> FISH_VOICE_ID;
+   public static final ConfigValue<String> FISH_MODEL;
    public static final EnumValue<TTSLanguage> TTS_LANGUAGE;
    public static final ConfigValue<String> ENDPOINT_VOICE;
    public static final ConfigValue<String> KOKORO_MODEL;
@@ -75,6 +76,8 @@ public class VerityConfig {
       TTS_API_KEY = builder.comment("Your TTS API Key (Cartesia)").define("ttsApiKey", "");
       FISH_API_KEY = builder.comment("Your fish.audio API key (FISH_AUDIO provider)").define("fishApiKey", "");
       FISH_VOICE_ID = builder.comment("fish.audio voice model ID (FISH_AUDIO provider). Empty uses the default voice.").define("fishVoiceId", "");
+      FISH_MODEL = builder.comment("fish.audio model (FISH_AUDIO provider): s2.1-pro-free (free tier), s2.1-pro, s2-pro, s1. Empty uses fish.audio's default.")
+         .define("fishModel", "s2.1-pro-free");
       TTS_LANGUAGE = builder.comment("The language Verity speaks (Cartesia)").defineEnum("ttsLanguage", TTSLanguage.English);
       ENDPOINT_VOICE = builder.comment("The voice the selected TTS Provider uses (Cartesia Voice ID, Kokoro)").define("endpointVoice", "am_fenrir");
       KOKORO_MODEL = builder.comment("Model for Kokoro").define("kokoroModel", "");
