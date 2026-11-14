@@ -11,6 +11,7 @@ import net.neoforged.neoforge.client.event.RegisterSpecialModelRendererEvent;
 import varmite.verity.client.audio.TTSHandler;
 import varmite.verity.client.gui.KarmaHudOverlay;
 import varmite.verity.entity.ModEntities;
+import varmite.verity.entity.demon.rendering.VerityDemonRenderer;
 import varmite.verity.entity.utils.SphereEntityRenderer;
 import varmite.verity.entity.veritybox.rendering.BoxRenderer;
 import varmite.verity.environment.items.client.VerityItemRenderer;
@@ -20,6 +21,7 @@ public class ModBusClientSetup {
    @SubscribeEvent
    public static void registerRenderers(RegisterRenderers event) {
       event.registerEntityRenderer(ModEntities.VERITY_ENTITY.get(), SphereEntityRenderer::new);
+      event.registerEntityRenderer(ModEntities.VERITY_DEMON_ENTITY.get(), VerityDemonRenderer::new);
       event.registerEntityRenderer(ModEntities.BOX_ENTITY.get(), context -> new BoxRenderer<>(context));
    }
 

@@ -37,9 +37,7 @@ public class DemonStareAndBreakGoal extends Goal {
          return false;
       }
 
-      this.targetPlayer = this.demon
-         .level()
-         .getNearestPlayer(this.targetingConditions, this.demon, this.demon.getX(), this.demon.getLookAnchorY(), this.demon.getZ());
+      this.targetPlayer = getServerLevel(this.demon).getNearestPlayer(this.targetingConditions, this.demon, this.demon.getX(), this.demon.getLookAnchorY(), this.demon.getZ());
       return this.targetPlayer == null || !this.targetPlayer.isCreative() && !this.targetPlayer.isSpectator() ? this.targetPlayer != null : false;
    }
 

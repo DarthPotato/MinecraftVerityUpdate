@@ -3,12 +3,12 @@ package varmite.verity.entity.demon.pathfinding;
 import net.minecraft.core.BlockPos;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.Mob;
-import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.PathNavigationRegion;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.level.pathfinder.PathfindingContext;
 import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
-import net.minecraftforge.common.Tags.Blocks;
+import net.neoforged.neoforge.common.Tags;
 
 public class DemonNodeEvaluator extends WalkNodeEvaluator {
    private static final int CRAWL_CLEARANCE = 2;
@@ -20,12 +20,12 @@ public class DemonNodeEvaluator extends WalkNodeEvaluator {
    }
 
    @Override
-   public BlockPathTypes getBlockPathType(BlockGetter level, int x, int y, int z) {
-      BlockState state = level.getBlockState(new BlockPos(x, y, z));
-      return isSoftCover(state) ? BlockPathTypes.OPEN : super.getBlockPathType(level, x, y, z);
+   public PathType getPathType(PathfindingContext context, int x, int y, int z) {
+      BlockState state = context.getBlockState(new BlockPos(x, y, z));
+      return isSoftCover(state) ? PathType.OPEN : super.getPathType(context, x, y, z);
    }
 
    private static boolean isSoftCover(BlockState state) {
-      return state.is(BlockTags.LEAVES) || state.is(Blocks.GLASS) || state.is(Blocks.GLASS_PANES);
+      return state.is(BlockTags.LEAVES) || state.is(Tags.BlockItems.GLASS_BLOCKS.block()) || state.is(Tags.BlockItems.GLASS_PANES.block());
    }
 }

@@ -43,14 +43,14 @@ public class DemonAttackGoal extends MeleeAttackGoal {
    }
 
    @Override
-   protected void checkAndPerformAttack(LivingEntity target, double distance) {
-      if (distance <= this.getAttackReachSqr(target) && this.attackCooldown <= 0) {
+   protected void checkAndPerformAttack(LivingEntity target) {
+      if (this.mob.isWithinMeleeAttackRange(target) && this.attackCooldown <= 0) {
          this.resetAttackCooldown();
          if (this.demon.getRandom().nextFloat() < 0.5F) {
             this.demon.startGrabbing(target);
          } else {
             this.demon.triggerAttack();
-            this.mob.doHurtTarget(target);
+            this.mob.doHurtTarget(getServerLevel(this.mob), target);
          }
       }
    }

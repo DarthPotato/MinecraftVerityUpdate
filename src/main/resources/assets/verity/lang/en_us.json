@@ -15,6 +15,7 @@
 
   "entity.verity.box": "Box",
   "entity.verity.verity": "Verity™",
+  "entity.verity.verity_demon": "§4§lVERITY",
 
   "sounds.verity.box_click": "Box Click",
   "sounds.verity.box_open": "Open Box",
@@ -24,5 +25,6 @@
   "sounds.verity.intro": "Introduction",
   "sounds.verity.impact": "Verity™ Impact",
   "sounds.verity.bone_break": "Bones break",
+  "sounds.verity.chase": "§l§4RUN",
   "sounds.verity.edit": "Edit Disc"
 }

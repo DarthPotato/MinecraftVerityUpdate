@@ -381,7 +381,7 @@ public class VerityEntity extends PathfinderMob {
       if (mode == HostileEvent.MESSAGE) {
          this.markHostileEventStarted(player, data, provoked);
          player.sendSystemMessage(
-            Component.literal("§7Verity's demon form was supposed to show up now. It isn't in this build yet, so imagine something terrifying.")
+            Component.literal("§7Verity's demon form would appear now, but the Hostile Event setting is MESSAGE. Imagine something terrifying.")
          );
          HostileEvents.resolve(serverLevel);
          return false;
@@ -392,7 +392,9 @@ public class VerityEntity extends PathfinderMob {
       }
 
       BlockPos spawnPos = this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition());
-      Entity standIn = EntityTypes.WITHER.spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION);
+      Entity standIn = mode == HostileEvent.DEMON
+         ? ModEntities.VERITY_DEMON_ENTITY.get().spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION)
+         : EntityTypes.WITHER.spawn(serverLevel, spawnPos, EntitySpawnReason.CONVERSION);
       if (standIn == null) {
          return false;
       }
@@ -404,6 +406,20 @@ public class VerityEntity extends PathfinderMob {
       this.clearPlayersWhoLooked();
       this.pleadingTimer = 6000;
       player.sendSystemMessage(Component.literal("§4Verity's face goes blank... You must look at him to calm him down."));
+      if (mode == HostileEvent.DEMON) {
+         // As in 6.0.0, the demon starts out staring at the player. (The original also forced midnight here; that cut stays.)
+         double dX = player.getX() - standIn.getX();
+         double dZ = player.getZ() - standIn.getZ();
+         double dY = player.getEyeY() - standIn.getEyeY();
+         float yaw = (float)(Math.atan2(dZ, dX) * (180.0 / Math.PI)) - 90.0F;
+         float pitch = (float)(-(Math.atan2(dY, Math.sqrt(dX * dX + dZ * dZ)) * (180.0 / Math.PI)));
+         standIn.setYRot(yaw);
+         standIn.setYHeadRot(yaw);
+         standIn.setXRot(pitch);
+         standIn.yRotO = yaw;
+         standIn.xRotO = pitch;
+      }
+
       serverLevel.playSound((Player)null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.0F, 0.5F);
       serverLevel.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 1.0, this.getZ(), 30, 0.5, 0.5, 0.5, 0.05);
       return true;

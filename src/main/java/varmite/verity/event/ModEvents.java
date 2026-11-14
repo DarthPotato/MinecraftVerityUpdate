@@ -32,9 +32,9 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.Entity.RemovalReason;
-import net.minecraft.world.entity.boss.wither.WitherBoss;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.player.Player.BedSleepingProblem;
 import net.minecraft.world.item.ItemStack;
@@ -68,6 +68,7 @@ import varmite.verity.command.RecoverVerityCommand;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
 import varmite.verity.entity.llm.AiManager;
+import varmite.verity.entity.demon.VerityDemonEntity;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.entity.veritybox.BoxEntity;
 import varmite.verity.environment.items.ModItems;
@@ -267,7 +268,22 @@ public class ModEvents {
 
    @SubscribeEvent
    public static void onDeath(LivingDeathEvent event) {
-      if (event.getEntity() instanceof WitherBoss standIn && standIn.level() instanceof ServerLevel level) {
+      if (event.getEntity() instanceof ServerPlayer player) {
+         if (event.getSource().getEntity() instanceof VerityDemonEntity && VerityConfig.CAN_CRASH.get()) {
+            // One tick later, so the kick doesn't pull the player out of the world in the middle of dying.
+            schedule(
+               () -> player.connection.disconnect(
+                  Component.literal("Farewell, " + player.getName().getString()).withStyle(ChatFormatting.DARK_RED, ChatFormatting.BOLD)
+               ),
+               1
+            );
+         }
+
+         return;
+      }
+
+      LivingEntity standIn = event.getEntity();
+      if (standIn.level() instanceof ServerLevel level) {
          WorldSpawnData data = WorldSpawnData.get(level);
          if (standIn.getUUID().equals(data.activeDemon)) {
             HostileEvents.resolve(level);
@@ -291,9 +307,10 @@ public class ModEvents {
 
    @SubscribeEvent
    public static void onStandInLeaveLevel(EntityLeaveLevelEvent event) {
-      if (event.getEntity() instanceof WitherBoss standIn && event.getLevel() instanceof ServerLevel level) {
+      if (event.getLevel() instanceof ServerLevel level && event.getEntity().getUUID().equals(WorldSpawnData.get(level).activeDemon)) {
+         Entity standIn = event.getEntity();
          RemovalReason reason = standIn.getRemovalReason();
-         if (reason != null && reason.shouldDestroy() && standIn.getUUID().equals(WorldSpawnData.get(level).activeDemon)) {
+         if (reason != null && reason.shouldDestroy()) {
             HostileEvents.resolve(level);
          }
       }

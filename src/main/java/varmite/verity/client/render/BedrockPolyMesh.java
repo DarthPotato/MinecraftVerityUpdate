@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.util.GsonHelper;
 import org.slf4j.Logger;
@@ -20,12 +20,12 @@ public final class BedrockPolyMesh {
    private static final Logger LOGGER = LogUtils.getLogger();
    public static final int STRIDE = 8;
    public static final int VERTICES_PER_FACE = 4;
-   private static final Map<ResourceLocation, Map<String, float[]>> CACHE = new ConcurrentHashMap<>();
+   private static final Map<Identifier, Map<String, float[]>> CACHE = new ConcurrentHashMap<>();
 
    private BedrockPolyMesh() {
    }
 
-   public static Map<String, float[]> forModel(ResourceLocation modelLocation) {
+   public static Map<String, float[]> forModel(Identifier modelLocation) {
       return CACHE.computeIfAbsent(modelLocation, BedrockPolyMesh::load);
    }
 
@@ -33,7 +33,7 @@ public final class BedrockPolyMesh {
       CACHE.clear();
    }
 
-   private static Map<String, float[]> load(ResourceLocation modelLocation) {
+   private static Map<String, float[]> load(Identifier modelLocation) {
       Optional<Resource> resource = Minecraft.getInstance().getResourceManager().getResource(modelLocation);
       if (resource.isEmpty()) {
          LOGGER.error("Could not find Bedrock model {} while looking for poly_mesh geometry", modelLocation);

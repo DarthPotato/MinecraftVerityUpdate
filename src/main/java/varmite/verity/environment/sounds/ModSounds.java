@@ -20,6 +20,8 @@ public class ModSounds {
    public static final DeferredHolder<SoundEvent, SoundEvent> IMPACT_2 = registerSoundEvent("impact_2");
    public static final DeferredHolder<SoundEvent, SoundEvent> BONE_0 = registerSoundEvent("bone_snap");
    public static final DeferredHolder<SoundEvent, SoundEvent> BONE_1 = registerSoundEvent("bone_break");
+   public static final DeferredHolder<SoundEvent, SoundEvent> CHASE = registerSoundEvent("chase");
+   public static final DeferredHolder<SoundEvent, SoundEvent> JUMPSCARE = registerSoundEvent("jumpscare");
    public static final DeferredHolder<SoundEvent, SoundEvent> VERITY_DISC_SOUND = SOUND_EVENTS.register(
       "verity_disc", () -> SoundEvent.createVariableRangeEvent(Identifier.fromNamespaceAndPath("verity", "verity_disc"))
    );

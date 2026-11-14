@@ -1,13 +1,11 @@
 package varmite.verity.entity.demon;
 
 import com.mojang.logging.LogUtils;
-import java.util.Collections;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
@@ -37,7 +35,7 @@ import net.minecraft.world.entity.ai.goal.target.HurtByTargetGoal;
 import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
 import net.minecraft.world.entity.ai.navigation.PathNavigation;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
@@ -46,20 +44,22 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
-import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
-import software.bernie.geckolib.core.animation.Animation.LoopType;
-import software.bernie.geckolib.core.object.PlayState;
-import software.bernie.geckolib.util.GeckoLibUtil;
+import com.geckolib.animatable.GeoEntity;
+import com.geckolib.animatable.instance.AnimatableInstanceCache;
+import com.geckolib.animation.AnimationController;
+import com.geckolib.animation.state.AnimationTest;
+import com.geckolib.animation.RawAnimation;
+import com.geckolib.animatable.manager.AnimatableManager.ControllerRegistrar;
+import com.geckolib.animation.object.LoopType;
+import com.geckolib.animation.object.PlayState;
+import com.geckolib.util.GeckoLibUtil;
 import varmite.verity.client.sound.ClientSoundHandler;
 import varmite.verity.entity.demon.goals.DemonAttackGoal;
 import varmite.verity.entity.demon.goals.DemonBreakDoorGoal;
@@ -129,9 +129,8 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
 
    public VerityDemonEntity(EntityType<? extends PathfinderMob> entityType, Level level) {
       super(entityType, level);
-      this.setMaxUpStep(1.5F);
-      this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);
-      this.setPathfindingMalus(BlockPathTypes.WATER_BORDER, 0.0F);
+      this.setPathfindingMalus(PathType.WATER, 0.0F);
+      this.setPathfindingMalus(PathType.WATER_BORDER, 0.0F);
       this.setPersistenceRequired();
    }
 
@@ -141,16 +140,16 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    }
 
    @Override
-   protected void defineSynchedData() {
-      super.defineSynchedData();
-      this.entityData.define(DEMON_STATE, 0);
-      this.entityData.define(IS_CLIMBING, false);
-      this.entityData.define(IS_CRAWLING, false);
-      this.entityData.define(HUNT_PHASE, 0);
-      this.entityData.define(IS_EATING, false);
-      this.entityData.define(IS_GRABBING, false);
-      this.entityData.define(GRABBED_ENTITY_ID, 0);
-      this.entityData.define(IS_STALKING_WINDOW, false);
+   protected void defineSynchedData(SynchedEntityData.Builder builder) {
+      super.defineSynchedData(builder);
+      builder.define(DEMON_STATE, 0);
+      builder.define(IS_CLIMBING, false);
+      builder.define(IS_CRAWLING, false);
+      builder.define(HUNT_PHASE, 0);
+      builder.define(IS_EATING, false);
+      builder.define(IS_GRABBING, false);
+      builder.define(GRABBED_ENTITY_ID, 0);
+      builder.define(IS_STALKING_WINDOW, false);
    }
 
    @Override
@@ -282,13 +281,14 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
          .add(Attributes.FOLLOW_RANGE, 512.0)
          .add(Attributes.ATTACK_DAMAGE, 19.0)
          .add(Attributes.ATTACK_KNOCKBACK, 1.0)
-         .add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
+         .add(Attributes.KNOCKBACK_RESISTANCE, 1.0)
+         .add(Attributes.STEP_HEIGHT, 1.5);
    }
 
    @Override
-   public boolean hurt(DamageSource source, float amount) {
+   public boolean hurtServer(ServerLevel level, DamageSource source, float amount) {
       if (!source.is(DamageTypes.FALL) && !source.is(DamageTypes.IN_WALL)) {
-         boolean wasHurt = super.hurt(source, amount);
+         boolean wasHurt = super.hurtServer(level, source, amount);
          if (wasHurt
             && source.getEntity() instanceof LivingEntity attacker
             && !(attacker instanceof Player player && (player.isCreative() || player.isSpectator()))) {
@@ -315,9 +315,9 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    }
 
    @Override
-   public boolean killedEntity(ServerLevel level, LivingEntity killedEntity) {
+   public boolean killedEntity(ServerLevel level, LivingEntity killedEntity, DamageSource source) {
       this.startEating();
-      return super.killedEntity(level, killedEntity);
+      return super.killedEntity(level, killedEntity, source);
    }
 
    public boolean hasLineOfSightThroughGlass(Player player) {
@@ -349,7 +349,7 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    @Override
    public void tick() {
       super.tick();
-      if (this.level().isClientSide) {
+      if (this.level().isClientSide()) {
          if (this.getDemonState() == 1 && !this.isPlayingChaseSound) {
             this.isPlayingChaseSound = true;
             ClientSoundHandler.playDemonChaseSound(this);
@@ -361,10 +361,10 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
             this.releaseForcedChunk();
          } else if (this.lastForcedChunk == null || !this.lastForcedChunk.equals(currentChunk)) {
             if (this.lastForcedChunk != null) {
-               level.setChunkForced(this.lastForcedChunk.x, this.lastForcedChunk.z, false);
+               level.setChunkForced(this.lastForcedChunk.x(), this.lastForcedChunk.z(), false);
             }
 
-            level.setChunkForced(currentChunk.x, currentChunk.z, true);
+            level.setChunkForced(currentChunk.x(), currentChunk.z(), true);
             this.lastForcedChunk = currentChunk;
          }
 
@@ -382,7 +382,7 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
                }
 
                grabbed.setDeltaMovement(carry);
-               grabbed.hurtMarked = true;
+               grabbed.needsSync = true;
                grabbed.fallDistance = 0.0F;
                if (this.grabTicks >= 28) {
                   Vec3 launchVector = grabbed.position().subtract(this.position()).normalize().multiply(4.0, 1.2, 4.0).add(0.0, 0.2, 0.0);
@@ -567,7 +567,7 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
                if (horizontal.lengthSqr() > 1.0E-4) {
                   horizontal = horizontal.normalize();
                   this.setDeltaMovement(horizontal.x * 0.5, 0.55, horizontal.z * 0.5);
-                  this.hasImpulse = true;
+                  this.needsSync = true;
                }
 
                this.resetStuckTimer();
@@ -601,17 +601,17 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    }
 
    @Override
-   public void addAdditionalSaveData(CompoundTag tag) {
-      super.addAdditionalSaveData(tag);
-      tag.putInt("DemonState", this.getDemonState());
-      tag.putInt("HuntPhase", this.getHuntPhase());
+   public void addAdditionalSaveData(ValueOutput output) {
+      super.addAdditionalSaveData(output);
+      output.putInt("DemonState", this.getDemonState());
+      output.putInt("HuntPhase", this.getHuntPhase());
    }
 
    @Override
-   public void readAdditionalSaveData(CompoundTag tag) {
-      super.readAdditionalSaveData(tag);
-      this.setDemonState(tag.getInt("DemonState"));
-      this.setHuntPhase(tag.getInt("HuntPhase"));
+   public void readAdditionalSaveData(ValueInput input) {
+      super.readAdditionalSaveData(input);
+      this.setDemonState(input.getIntOr("DemonState", 0));
+      this.setHuntPhase(input.getIntOr("HuntPhase", 0));
    }
 
    @Override
@@ -622,13 +622,13 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
 
    private void releaseForcedChunk() {
       if (this.lastForcedChunk != null && this.level() instanceof ServerLevel serverLevel) {
-         serverLevel.setChunkForced(this.lastForcedChunk.x, this.lastForcedChunk.z, false);
+         serverLevel.setChunkForced(this.lastForcedChunk.x(), this.lastForcedChunk.z(), false);
          this.lastForcedChunk = null;
       }
    }
 
    @Override
-   public EntityDimensions getDimensions(Pose pose) {
+   protected EntityDimensions getDefaultDimensions(Pose pose) {
       return EntityDimensions.fixed(0.4F, this.entityData.get(IS_CRAWLING) ? 1.8F : 4.8F);
    }
 
@@ -645,13 +645,13 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
       this.triggerAnim("action_controller", "attack_trigger");
    }
 
-   private PlayState play(AnimationState<VerityDemonEntity> state, RawAnimation animation, String name) {
+   private PlayState play(AnimationTest<VerityDemonEntity> state, RawAnimation animation, String name) {
       return state.setAndContinue(animation);
    }
 
    @Override
    public void registerControllers(ControllerRegistrar controllers) {
-      AnimationController<VerityDemonEntity> movementController = new AnimationController<>(this, "movement_controller", 5, state -> {
+      AnimationController<VerityDemonEntity> movementController = new AnimationController<>("movement_controller", 5, state -> {
          if (this.isDeadOrDying()) {
             return PlayState.STOP;
          }
@@ -669,7 +669,7 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
             return this.play(state, CHASE, "chase");
          }
 
-         double now = state.getAnimationTick();
+         double now = state.renderState().getAnimatableAge();
          if (this.stoppedSinceTick < 0.0) {
             this.stoppedSinceTick = now;
          }
@@ -678,14 +678,14 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
             return this.play(state, CHASE, "chase");
          }
 
-         state.getController().setAnimationSpeed(1.0);
+         state.controller().setAnimationSpeed(1.0);
          return this.isStalkingWindow() ? this.play(state, WINDOW, "window") : this.play(state, IDLE, "idle");
       });
       movementController.triggerableAnim("prepare_for_chase", PREPARE_FOR_CHASE);
       movementController.triggerableAnim("attack_throw", THROW);
       controllers.add(movementController);
       AnimationController<VerityDemonEntity> actionController = new AnimationController<>(
-         this, "action_controller", 5, state -> this.entityData.get(IS_EATING) ? state.setAndContinue(EAT) : PlayState.STOP
+         "action_controller", 5, state -> this.entityData.get(IS_EATING) ? state.setAndContinue(EAT) : PlayState.STOP
       );
       actionController.triggerableAnim("attack_trigger", ATTACK);
       controllers.add(actionController);
@@ -713,11 +713,6 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
 
    @Override
    public void push(@NotNull Entity e) {
-   }
-
-   @Override
-   public Iterable<ItemStack> getArmorSlots() {
-      return Collections.singleton(ItemStack.EMPTY);
    }
 
    @Override

@@ -97,7 +97,7 @@ public class DemonClimbGoal extends Goal {
          if (lunge.lengthSqr() > 1.0E-4) {
             lunge = lunge.normalize().scale(0.45);
             this.demon.setDeltaMovement(lunge.x, 0.25, lunge.z);
-            this.demon.hasImpulse = true;
+            this.demon.needsSync = true;
          }
       } else {
          this.cooldown = 40;
@@ -154,7 +154,7 @@ public class DemonClimbGoal extends Goal {
       }
 
       this.demon.setDeltaMovement(hugX, 0.35, hugZ);
-      this.demon.hasImpulse = true;
+      this.demon.needsSync = true;
       this.clearAscent();
       if (this.demon.getY() - this.lastY < 0.04) {
          this.stallTicks++;
@@ -186,7 +186,7 @@ public class DemonClimbGoal extends Goal {
       }
 
       int run = 0;
-      int floor = Math.max(this.demon.getBlockY(), level.getMinBuildHeight());
+      int floor = Math.max(this.demon.getBlockY(), level.getMinY());
 
       for (int y = below.getY(); y >= floor && !this.isSolid(new BlockPos(below.getX(), y, below.getZ())); y--) {
          run++;
