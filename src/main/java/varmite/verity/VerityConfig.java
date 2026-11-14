@@ -58,6 +58,7 @@ public class VerityConfig {
       KILL_ENTITIES = builder.comment("Toggles if Verity can kill entities.").define("killEntities", true);
       KILL_VILLAGERS = builder.comment("Toggles if Verity should kill villagers.").define("killVillagers", true);
       IMMERSIVE_MODE = builder.comment("Toggles the Karma bar above your hotbar.").define("showKarma", false);
+      builder.pop();
       builder.push("AISettings");
       API_KEY = builder.comment("API Key for providers that requires one.").define("apiKey", "");
       AI_ENDPOINT = builder.comment("URL to use for the AI.").define("aiEndpoint", "");
@@ -78,10 +79,10 @@ public class VerityConfig {
       KOKORO_MODEL = builder.comment("Model for Kokoro").define("kokoroModel", "");
       builder.pop();
       builder.push("SpeechSettings");
-      STT_PROVIDER = builder.comment("Provider to use for Text To Speech").defineEnum("sttProvider", STTProvider.NATIVE);
+      STT_PROVIDER = builder.comment("Provider to use for Speech To Text").defineEnum("sttProvider", STTProvider.NATIVE);
       GROQ_KEY = builder.comment("API Key for GROQ.").define("groqKey", "");
       STT_ENDPOINT = builder.comment("Custom endpoint for STT").define("sttEndpoint", "");
-      STT_MODEL = builder.comment("Custom endpoint for STT").define("sttModel", "");
+      STT_MODEL = builder.comment("Custom model for STT").define("sttModel", "");
       builder.pop();
       builder.push("Custom");
       COLOR = builder.comment("The Hue of Verity's texture color (0 to 360 degrees).").defineInRange("colorHue", 0, 0, 360);

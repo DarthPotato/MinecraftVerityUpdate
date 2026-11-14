@@ -5,9 +5,11 @@ import dev.langchain4j.model.google.genai.GoogleGenAiChatModel;
 import dev.langchain4j.model.google.genai.GoogleGenAiChatModel.Builder;
 import dev.langchain4j.model.mistralai.MistralAiChatModel;
 import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.ollama.OllamaChatRequestParameters;
 import dev.langchain4j.model.ollama.OllamaChatModel.OllamaChatModelBuilder;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.model.openai.OpenAiChatModel.OpenAiChatModelBuilder;
+import java.time.Duration;
 import java.util.Map;
 import varmite.verity.VerityConfig;
 import varmite.verity.types.AiProvider;
@@ -18,6 +20,8 @@ public class LLMBuilder {
    private String endpoint;
    private String apiKey;
    private boolean thinking = false;
+   private Boolean ollamaThink;
+   private int contextSize = 8192;
 
    public LLMBuilder setProvider(AiProvider provider) {
       this.provider = provider;
@@ -44,15 +48,28 @@ public class LLMBuilder {
       return this;
    }
 
+   public LLMBuilder setOllamaThink(Boolean think) {
+      this.ollamaThink = think;
+      return this;
+   }
+
+   public LLMBuilder setContextSize(int contextSize) {
+      this.contextSize = contextSize;
+      return this;
+   }
+
    public ChatModel build() {
-      return switch (this.provider) {
-         case OLLAMA -> ((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)OllamaChatModel.builder()
-                              .baseUrl(this.endpoint))
-                           .modelName(this.model))
-                        .numCtx(16000))
-                     .think(this.thinking))
-                  .temperature(0.8))
-               .logResponses(VerityConfig.DEV_MODE.get()))
+      return (ChatModel)(switch (this.provider) {
+         case OLLAMA -> ((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)((OllamaChatModelBuilder)OllamaChatModel.builder()
+                                    .baseUrl(this.endpoint))
+                                 .modelName(this.model))
+                              .numCtx(this.contextSize))
+                           .numPredict(Boolean.TRUE.equals(this.ollamaThink) ? 3072 : 1024))
+                        .think(this.ollamaThink))
+                     .timeout(Duration.ofMinutes(5L)))
+                  .maxRetries(0)
+                  .defaultRequestParameters(OllamaChatRequestParameters.builder().keepAlive(1800).build()))
+               .logResponses((Boolean)VerityConfig.DEV_MODE.get()))
             .build();
          case OPENAI -> {
             OpenAiChatModelBuilder builder = OpenAiChatModel.builder()
@@ -60,7 +77,7 @@ public class LLMBuilder {
                .apiKey(this.apiKey)
                .modelName(this.model)
                .returnThinking(this.thinking)
-               .logResponses(VerityConfig.DEV_MODE.get());
+               .logResponses((Boolean)VerityConfig.DEV_MODE.get());
             if (this.isOpenAiReasoningModel()) {
                builder.reasoningEffort(this.thinking ? "medium" : "none");
             } else {
@@ -74,8 +91,8 @@ public class LLMBuilder {
                .apiKey(this.apiKey)
                .modelName(this.model)
                .temperature(0.8)
-               .logResponses(VerityConfig.DEV_MODE.get());
-            if (this.model.startsWith("gemini-2.5-")) {
+               .logResponses((Boolean)VerityConfig.DEV_MODE.get());
+            if (this.model.startsWith("gemini-3.5-")) {
                builder.thinkingBudget(this.thinking ? -1 : 0);
             }
 
@@ -88,7 +105,7 @@ public class LLMBuilder {
                .modelName(this.model)
                .returnThinking(this.thinking)
                .temperature(0.8)
-               .logResponses(VerityConfig.DEV_MODE.get());
+               .logResponses((Boolean)VerityConfig.DEV_MODE.get());
             if (this.isGptOssModel()) {
                builder.reasoningEffort(this.thinking ? "medium" : "low").customParameters(Map.of("reasoning_format", "hidden"));
             }
@@ -102,7 +119,7 @@ public class LLMBuilder {
                .modelName(this.model)
                .returnThinking(this.thinking)
                .temperature(0.8)
-               .logResponses(VerityConfig.DEV_MODE.get());
+               .logResponses((Boolean)VerityConfig.DEV_MODE.get());
             if (this.isGptOssModel()) {
                builder.customParameters(Map.of("reasoning", Map.of("effort", this.thinking ? "medium" : "low", "exclude", true)));
             }
@@ -113,9 +130,9 @@ public class LLMBuilder {
             .apiKey(this.apiKey)
             .modelName(this.model)
             .temperature(0.8)
-            .logResponses(VerityConfig.DEV_MODE.get())
+            .logResponses((Boolean)VerityConfig.DEV_MODE.get())
             .build();
-      };
+      });
    }
 
    private boolean isOpenAiReasoningModel() {

@@ -11,7 +11,7 @@ public enum AiModelPreset {
                case OPENAI:
                   yield "gpt-5.4-mini";
                case GEMINI:
-                  yield "gemini-2.5-flash";
+                  yield "gemini-3.5-flash";
                case GROQ:
                case OPENROUTER:
                   yield "openai/gpt-oss-120b";
@@ -28,7 +28,7 @@ public enum AiModelPreset {
                case OPENAI:
                   yield "gpt-5.4-nano";
                case GEMINI:
-                  yield "gemini-2.5-flash-lite";
+                  yield "gemini-3.5-flash-lite";
                case GROQ:
                case OPENROUTER:
                   yield "openai/gpt-oss-20b";

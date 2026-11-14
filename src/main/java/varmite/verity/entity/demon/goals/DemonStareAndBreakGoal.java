@@ -80,7 +80,7 @@ public class DemonStareAndBreakGoal extends Goal {
          if (this.isPlayerLookingAtDemon(this.targetPlayer)) {
             this.demon.level().playSound((Player)null, this.demon.blockPosition(), ModSounds.BONE_0.get(), SoundSource.HOSTILE, 1.5F, 1.0F);
             this.hasTriggeredTransformation = true;
-            this.delayTicks = VerityDemonEntity.PREPARE_FOR_CHASE_TICKS - 1;
+            this.delayTicks = this.adjustedTickDelay(VerityDemonEntity.PREPARE_FOR_CHASE_TICKS) - 1;
             this.demon.triggerPrepareForChase();
          }
       }

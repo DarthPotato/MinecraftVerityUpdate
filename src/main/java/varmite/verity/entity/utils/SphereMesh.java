@@ -2,6 +2,10 @@ package varmite.verity.entity.utils;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -13,6 +17,8 @@ import org.joml.Matrix4f;
 public final class SphereMesh {
    private static final float TEXTURE_SCALE = 1.3F;
    private static final float TEXTURE_SQUISH_Y = 0.9F;
+   private static final String FACE_DIR = "textures/entity/";
+   private static final Map<ResourceLocation, Optional<ResourceLocation>> TEETH_OVERLAYS = new ConcurrentHashMap<>();
 
    private SphereMesh() {
    }
@@ -34,6 +40,39 @@ public final class SphereMesh {
       Matrix4f pose = poseStack.last().pose();
       Matrix3f normal = poseStack.last().normal();
       drawSphere(pose, normal, consumer, radius, latitudes, longitudes, packedLight, r, g, b, a);
+      teethOverlay(texture)
+         .ifPresent(
+            overlay -> drawSphere(
+               pose,
+               normal,
+               bufferSource.getBuffer(RenderType.entityTranslucent(overlay)),
+               radius * 1.002F,
+               latitudes,
+               longitudes,
+               packedLight,
+               255,
+               255,
+               255,
+               a
+            )
+         );
+   }
+
+   private static Optional<ResourceLocation> teethOverlay(ResourceLocation texture) {
+      return TEETH_OVERLAYS.computeIfAbsent(
+         texture,
+         tex -> {
+            String path = tex.getPath();
+            if (!path.startsWith("textures/entity/")) {
+               return Optional.empty();
+            }
+
+            ResourceLocation overlay = ResourceLocation.fromNamespaceAndPath(
+               tex.getNamespace(), "textures/entity/teeth/" + path.substring("textures/entity/".length())
+            );
+            return Minecraft.getInstance().getResourceManager().getResource(overlay).map(resource -> overlay);
+         }
+      );
    }
 
    private static void drawSphere(

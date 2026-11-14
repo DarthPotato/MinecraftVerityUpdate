@@ -46,12 +46,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
+import varmite.verity.entity.demon.DemonSpawnPlacement;
 import varmite.verity.entity.demon.VerityDemonEntity;
 import varmite.verity.entity.veritybox.BoxEntity;
 import varmite.verity.environment.sounds.ModSounds;
@@ -72,6 +72,7 @@ public class VerityEntity extends PathfinderMob {
    public int pleadingTimer = -1;
    private int consecutiveBadMessages = 0;
    private boolean hasTransformed = false;
+   private int nextDemonSpawnAttemptTick;
    private int talkTicks = 0;
    private int talkEndTick = -1;
    public int animationTicks = 140;
@@ -147,11 +148,7 @@ public class VerityEntity extends PathfinderMob {
 
    public void triggerBoxDrop() {
       if (!this.level().isClientSide) {
-         this.getServer().execute(() -> {
-            WorldSpawnData data = WorldSpawnData.get((ServerLevel)this.level());
-            data.verityKarma = 10.0F;
-            data.setDirty();
-         });
+         this.getServer().execute(() -> ModEvents.setAndSyncKarma((ServerLevel)this.level(), 10.0F));
          this.setVariant("hurt");
          this.animationTicks = 0;
          this.entityData.set(BOUNCE_START_TICK, 1);
@@ -382,6 +379,10 @@ public class VerityEntity extends PathfinderMob {
          return false;
       }
 
+      if (this.tickCount < this.nextDemonSpawnAttemptTick) {
+         return false;
+      }
+
       ServerLevel serverLevel = (ServerLevel)this.level();
       WorldSpawnData data = WorldSpawnData.get(serverLevel);
       if (data.hasLiveDemon()) {
@@ -395,81 +396,56 @@ public class VerityEntity extends PathfinderMob {
             }
          }
 
-         BlockPos spawnPos = this.getCreepyDemonSpawnPos(serverLevel, player.blockPosition());
-         Entity demonEntity = ModEntities.VERITY_DEMON_ENTITY.get().spawn(serverLevel, spawnPos, MobSpawnType.CONVERSION);
-         if (demonEntity == null) {
+         this.nextDemonSpawnAttemptTick = this.tickCount + 100;
+         DemonSpawnPlacement.Placement placement = DemonSpawnPlacement.find(serverLevel, player, null);
+         if (placement == null) {
             return false;
          }
 
-         if (provoked) {
-            data.hasProvokedSpawn = true;
+         VerityDemonEntity demonEntity = (VerityDemonEntity)ModEntities.VERITY_DEMON_ENTITY
+            .get()
+            .create(serverLevel, null, placement::apply, placement.pos(), MobSpawnType.CONVERSION, false, false);
+         if (demonEntity != null && serverLevel.addFreshEntity(demonEntity)) {
+            demonEntity.startSpawnFootsteps(player);
+            if (provoked) {
+               data.hasProvokedSpawn = true;
+            } else {
+               data.hasHostileDaySpawn = true;
+            }
+
+            data.setActiveDemon(demonEntity.getUUID());
+            VerityState.transformFollowingDay = false;
+            if ((Integer)VerityConfig.DAY_COUNT.get() <= (int)player.level().getDayTime() / 24000) {
+               VerityConfig.DAY_COUNT.set((int)player.level().getDayTime() / 24000);
+            }
+
+            VerityState.timeWillSpawn = 0L;
+            this.setMonstrous(true);
+            this.setApologyCount(0);
+            this.clearPlayersWhoLooked();
+            this.pleadingTimer = 6000;
+            player.sendSystemMessage(Component.literal("§4Verity's face goes blank... You must look at him to calm him down."));
+            double dX = player.getX() - demonEntity.getX();
+            double dZ = player.getZ() - demonEntity.getZ();
+            double dY = player.getEyeY() - demonEntity.getEyeY();
+            float yaw = (float)(Mth.atan2(dZ, dX) * (180.0 / Math.PI)) - 90.0F;
+            float pitch = (float)(-(Mth.atan2(dY, Math.sqrt(dX * dX + dZ * dZ)) * (180.0 / Math.PI)));
+            demonEntity.setYRot(yaw);
+            demonEntity.setYHeadRot(yaw);
+            demonEntity.setXRot(pitch);
+            demonEntity.yRotO = yaw;
+            demonEntity.xRotO = pitch;
+            long currentDay = serverLevel.getDayTime() / 24000L;
+            serverLevel.setDayTime(currentDay * 24000L + 18000L);
+            serverLevel.playSound(null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.0F, 0.5F);
+            serverLevel.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 1.0, this.getZ(), 30, 0.5, 0.5, 0.5, 0.05);
+            return true;
          } else {
-            data.hasHostileDaySpawn = true;
+            return false;
          }
-
-         data.setActiveDemon(demonEntity.getUUID());
-         VerityState.transformFollowingDay = false;
-         if (VerityConfig.DAY_COUNT.get() <= (int)player.level().getDayTime() / 24000) {
-            VerityConfig.DAY_COUNT.set((int)player.level().getDayTime() / 24000);
-         }
-
-         VerityState.timeWillSpawn = 0L;
-         this.setMonstrous(true);
-         this.setApologyCount(0);
-         this.clearPlayersWhoLooked();
-         this.pleadingTimer = 6000;
-         player.sendSystemMessage(Component.literal("§4Verity's face goes blank... You must look at him to calm him down."));
-         double dX = player.getX() - demonEntity.getX();
-         double dZ = player.getZ() - demonEntity.getZ();
-         double dY = player.getEyeY() - demonEntity.getEyeY();
-         float yaw = (float)(Mth.atan2(dZ, dX) * (180.0 / Math.PI)) - 90.0F;
-         float pitch = (float)(-(Mth.atan2(dY, Math.sqrt(dX * dX + dZ * dZ)) * (180.0 / Math.PI)));
-         demonEntity.setYRot(yaw);
-         demonEntity.setYHeadRot(yaw);
-         demonEntity.setXRot(pitch);
-         demonEntity.yRotO = yaw;
-         demonEntity.xRotO = pitch;
-         long currentDay = serverLevel.getDayTime() / 24000L;
-         serverLevel.setDayTime(currentDay * 24000L + 18000L);
-         serverLevel.playSound((Player)null, player.blockPosition(), SoundEvents.WITHER_SPAWN, SoundSource.HOSTILE, 1.0F, 0.5F);
-         serverLevel.sendParticles(ParticleTypes.LARGE_SMOKE, this.getX(), this.getY() + 1.0, this.getZ(), 30, 0.5, 0.5, 0.5, 0.05);
-         return true;
       } else {
          return false;
       }
-   }
-
-   private BlockPos getCreepyDemonSpawnPos(ServerLevel level, BlockPos playerPos) {
-      boolean isAboveGround = level.canSeeSky(playerPos) || playerPos.getY() >= level.getHeightmapPos(Types.MOTION_BLOCKING, playerPos).getY() - 2;
-      int attempts = 40;
-      BlockPos verityPos = this.blockPosition();
-
-      for (int i = 0; i < attempts; i++) {
-         int dx = (this.random.nextBoolean() ? 1 : -1) * (this.random.nextInt(16) + 16);
-         int dz = (this.random.nextBoolean() ? 1 : -1) * (this.random.nextInt(16) + 16);
-         BlockPos checkPos = playerPos.offset(dx, 0, dz);
-         if (!(checkPos.distSqr(verityPos) < 256.0)) {
-            if (isAboveGround) {
-               BlockPos surfacePos = level.getHeightmapPos(Types.MOTION_BLOCKING_NO_LEAVES, checkPos);
-               if (level.getBlockState(surfacePos.below()).isSolidRender(level, surfacePos.below())) {
-                  return surfacePos;
-               }
-            } else {
-               for (int dy = -4; dy <= 4; dy++) {
-                  BlockPos cavePos = checkPos.offset(0, dy, 0);
-                  if (level.isEmptyBlock(cavePos)
-                     && level.isEmptyBlock(cavePos.above())
-                     && level.getBlockState(cavePos.below()).isSolidRender(level, cavePos.below())
-                     && !level.canSeeSky(cavePos)) {
-                     return cavePos;
-                  }
-               }
-            }
-         }
-      }
-
-      BlockPos fallbackPos = verityPos.offset(16, 0, 16);
-      return isAboveGround ? level.getHeightmapPos(Types.MOTION_BLOCKING_NO_LEAVES, fallbackPos) : fallbackPos;
    }
 
    public void startTalking(int durationTicks) {

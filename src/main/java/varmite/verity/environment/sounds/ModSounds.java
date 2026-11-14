@@ -23,12 +23,6 @@ public class ModSounds {
    public static final RegistryObject<SoundEvent> BONE_0 = registerSoundEvent("bone_snap");
    public static final RegistryObject<SoundEvent> BONE_1 = registerSoundEvent("bone_break");
    public static final RegistryObject<SoundEvent> JUMPSCARE = registerSoundEvent("jumpscare");
-   public static final RegistryObject<SoundEvent> VERITY_DISC_SOUND = SOUND_EVENTS.register(
-      "verity_disc", () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("verity", "verity_disc"))
-   );
-   public static final RegistryObject<SoundEvent> VERITY_EDIT_DISC_SOUND = SOUND_EVENTS.register(
-      "verity_edit_disc", () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("verity", "verity_edit_disc"))
-   );
 
    private static RegistryObject<SoundEvent> registerSoundEvent(String name) {
       return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(ResourceLocation.fromNamespaceAndPath("verity", name)));

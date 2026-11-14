@@ -2,13 +2,16 @@ package varmite.verity.entity.demon;
 
 import com.mojang.logging.LogUtils;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.particles.DustParticleOptions;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -40,15 +43,22 @@ import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.EmptyBlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.ClipContext.Block;
+import net.minecraft.world.level.ClipContext.Fluid;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.pathfinder.BlockPathTypes;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.HitResult.Type;
+import net.minecraft.world.phys.shapes.Shapes;
+import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.common.Tags.Blocks;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import software.bernie.geckolib.animatable.GeoEntity;
@@ -75,6 +85,10 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    private int stuckTicks = 0;
    private int eatTicks = 0;
    private int grabTicks = 0;
+   @Nullable
+   private UUID spawnFootstepTarget;
+   private int spawnFootstepsRemaining;
+   private int spawnFootstepDelay;
    private static final int GRAB_LIFT_TICKS = 20;
    private static final int GRAB_HOLD_TICKS = 28;
    private static final double GRAB_MAX_CARRY = 1.5;
@@ -202,6 +216,57 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
       return this.entityData.get(IS_STALKING_WINDOW);
    }
 
+   public void setCrawling(boolean crawling) {
+      this.crawlTimer = crawling ? 20 : 0;
+      this.entityData.set(IS_CRAWLING, crawling);
+      this.refreshDimensions();
+   }
+
+   public void startSpawnFootsteps(Player player) {
+      if (!this.level().isClientSide) {
+         this.spawnFootstepTarget = player.getUUID();
+         this.spawnFootstepsRemaining = 5;
+         this.spawnFootstepDelay = 10;
+      }
+   }
+
+   private void tickSpawnFootsteps(ServerLevel level) {
+      if (this.spawnFootstepsRemaining > 0) {
+         if (!(
+            level.getPlayerByUUID(this.spawnFootstepTarget) instanceof ServerPlayer player
+               && player.isAlive()
+               && !player.isSpectator()
+               && !player.isCreative()
+               && this.isAlive()
+               && !this.isSilent()
+               && !(this.distanceToSqr(player) > 16384.0)
+         )) {
+            this.spawnFootstepsRemaining = 0;
+            this.spawnFootstepTarget = null;
+         } else if (--this.spawnFootstepDelay <= 0) {
+            Vec3 direction = this.position().subtract(player.position()).multiply(1.0, 0.0, 1.0);
+            Vec3 soundPos = player.position().add(direction.normalize().scale(Math.min(2.5, direction.length())));
+            player.connection
+               .send(
+                  new ClientboundSoundPacket(
+                     BuiltInRegistries.SOUND_EVENT.wrapAsHolder(SoundEvents.IRON_GOLEM_STEP),
+                     SoundSource.HOSTILE,
+                     soundPos.x,
+                     soundPos.y + 0.1,
+                     soundPos.z,
+                     2.4F,
+                     0.75F + this.random.nextFloat() * 0.15F,
+                     this.random.nextLong()
+                  )
+               );
+            this.spawnFootstepDelay = 8;
+            if (--this.spawnFootstepsRemaining == 0) {
+               this.spawnFootstepTarget = null;
+            }
+         }
+      }
+   }
+
    public void triggerPrepareForChase() {
       this.triggerAnim("movement_controller", "prepare_for_chase");
    }
@@ -321,29 +386,25 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    }
 
    public boolean hasLineOfSightThroughGlass(Player player) {
-      Vec3 start = new Vec3(player.getX(), player.getEyeY(), player.getZ());
-      Vec3 end = new Vec3(this.getX(), this.getLookAnchorY(), this.getZ());
-      double distance = start.distanceTo(end);
-      if (distance > 128.0) {
-         return false;
-      }
+      return hasLineOfSightThroughGlass(player, new Vec3(this.getX(), this.getLookAnchorY(), this.getZ()));
+   }
 
-      Vec3 dir = end.subtract(start).normalize();
-      Level level = this.level();
-
-      for (double d = 0.0; d < distance; d++) {
-         Vec3 point = start.add(dir.scale(d));
-         BlockPos pos = BlockPos.containing(point);
-         BlockState state = level.getBlockState(pos);
-         if (!state.getCollisionShape(level, pos).isEmpty()) {
-            String name = state.getBlock().getDescriptionId().toLowerCase();
-            if (!name.contains("glass") && !name.contains("pane") && !state.is(BlockTags.LEAVES)) {
-               return false;
-            }
-         }
-      }
-
-      return true;
+   public static boolean hasLineOfSightThroughGlass(Player player, Vec3 end) {
+      Vec3 start = player.getEyePosition();
+      return start.distanceToSqr(end) > 16384.0
+         ? false
+         : player.level()
+               .clip(
+                  new ClipContext(start, end, Block.COLLIDER, Fluid.NONE, player) {
+                     public VoxelShape getBlockShape(BlockState state, BlockGetter level, BlockPos pos) {
+                        return !state.is(Blocks.GLASS) && !state.is(Blocks.GLASS_PANES) && !state.is(BlockTags.LEAVES)
+                           ? super.getBlockShape(state, level, pos)
+                           : Shapes.empty();
+                     }
+                  }
+               )
+               .getType()
+            == Type.MISS;
    }
 
    @Override
@@ -356,6 +417,7 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
          }
       } else {
          ServerLevel level = (ServerLevel)this.level();
+         this.tickSpawnFootsteps(level);
          ChunkPos currentChunk = this.chunkPosition();
          if (this.getDemonState() != 1 || this.getTarget() == null) {
             this.releaseForcedChunk();
@@ -410,7 +472,7 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
                      BlockPos currentPos = centerPos.offset(i, 0, j);
                      BlockPos belowPos = currentPos.below();
                      if (level.getBlockState(currentPos).canBeReplaced() && level.getBlockState(belowPos).isFaceSturdy(level, belowPos, Direction.UP)) {
-                        level.setBlock(currentPos, Blocks.REDSTONE_WIRE.defaultBlockState(), 3);
+                        level.setBlock(currentPos, net.minecraft.world.level.block.Blocks.REDSTONE_WIRE.defaultBlockState(), 3);
                      }
                   }
                }
@@ -629,11 +691,19 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
 
    @Override
    public EntityDimensions getDimensions(Pose pose) {
-      return EntityDimensions.fixed(0.4F, this.entityData.get(IS_CRAWLING) ? 1.8F : 4.8F);
+      return getSpawnDimensions((Boolean)this.entityData.get(IS_CRAWLING));
+   }
+
+   static EntityDimensions getSpawnDimensions(boolean crawling) {
+      return EntityDimensions.fixed(0.4F, crawling ? 1.8F : 4.8F);
+   }
+
+   static double getLookAnchorHeight(boolean crawling) {
+      return Math.min(2.4F, getSpawnDimensions(crawling).height - 0.2);
    }
 
    public double getLookAnchorY() {
-      return this.getY() + 2.4F;
+      return this.getY() + getLookAnchorHeight((Boolean)this.entityData.get(IS_CRAWLING));
    }
 
    @Override

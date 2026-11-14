@@ -55,13 +55,21 @@ public class SphereEntityRenderer extends EntityRenderer<VerityEntity> {
             viewerZ = Mth.lerp(partialTick, player.zo, player.getZ());
          }
 
-         int hueValue = VerityConfig.COLOR.get();
-         int r = 255;
-         int g = 255;
-         int b = 255;
+         int colorConfig = (Integer)VerityConfig.COLOR.get();
          int a = 255;
-         if (hueValue != 0) {
-            int rgb = Mth.hsvToRgb(hueValue / 360.0F, 1.0F, 1.0F);
+         int r;
+         int g;
+         int b;
+         if (colorConfig == 0) {
+            r = 255;
+            g = 225;
+            b = 30;
+         } else if (colorConfig > 360) {
+            r = colorConfig >> 16 & 0xFF;
+            g = colorConfig >> 8 & 0xFF;
+            b = colorConfig & 0xFF;
+         } else {
+            int rgb = Mth.hsvToRgb(colorConfig / 360.0F, 1.0F, 1.0F);
             r = rgb >> 16 & 0xFF;
             g = rgb >> 8 & 0xFF;
             b = rgb & 0xFF;

@@ -17,6 +17,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.slf4j.Logger;
 import varmite.verity.entity.ModEntities;
+import varmite.verity.entity.llm.AiAPI;
 import varmite.verity.entity.llm.store.chat.ChatMemoryManager;
 import varmite.verity.entity.llm.store.memory.VerityMemoryManager;
 import varmite.verity.environment.block.ModBlocks;
@@ -50,7 +51,7 @@ public class Verity {
       modEventBus.addListener(ModBusCommonSetup::registerAttributes);
    }
 
-   private void commonSetup(FMLCommonSetupEvent event) {
+   private void commonSetup(final FMLCommonSetupEvent event) {
       event.enqueueWork(ModMessages::register);
       quietRetryLogging();
    }
@@ -83,6 +84,7 @@ public class Verity {
       MinecraftServer Server = event.getServer();
       VerityMemoryManager.init(Server);
       ChatMemoryManager.init(event.getServer());
+      AiAPI.warmUpOllamaAsync();
       System.out.println("Verity JE has loaded !");
    }
 }

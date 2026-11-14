@@ -17,8 +17,6 @@ public class ModCreativeModeTabs {
          .icon(() -> new ItemStack(ModItems.VERITY_ITEM.get()))
          .displayItems((parameters, output) -> {
             output.accept(ModItems.VERITY_ITEM.get());
-            output.accept(ModItems.VERITY_DISC.get());
-            output.accept(ModItems.VERITY_EDIT_DISC.get());
             output.accept(ModItems.FLASHLIGHT.get());
          })
          .build()

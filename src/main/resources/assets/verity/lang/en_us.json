@@ -1,16 +1,13 @@
 {
   "item.verity.verity_item": "Verity™",
-  "item.verity.verity_disc.desc": "The signature song that Verity™ loves.",
-  "item.verity.verity_disc": "Verity™'s Disc",
   "item.verity.flashlight": "Flashlight",
-  "item.verity.verity_edit_disc": "Verity™'s Edit Music",
-  "item.verity.verity_edit_disc.desc": "Verity™'s signature edit song",
 
   "creativetab.verity.verity_tab": "Verity™",
 
   "key.verity.push_to_talk": "Talk to Verity (Push to talk)",
   "category.verity.keys": "Verity Mod",
   "key.verity.cycle_mic": "Cycle Selected Mic",
+  "key.verity.toggle_ollama_progress": "Show/Hide Ollama Download Progress",
 
   "entity.verity.box": "Box",
   "entity.verity.verity": "Verity™",

@@ -10,10 +10,12 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import varmite.verity.client.audio.MicrophoneManager;
 import varmite.verity.client.audio.MicrophoneRecorder;
 import varmite.verity.client.audio.TTSHandler;
+import varmite.verity.client.gui.OllamaProgressHud;
 
 @EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public class KeybindHandler {
    private static boolean isRecording = false;
+   private static int releasePaddingTicks = 0;
    private static final MicrophoneRecorder RECORDER = new MicrophoneRecorder();
 
    public static boolean isRecording() {
@@ -32,13 +34,26 @@ public class KeybindHandler {
                MicrophoneManager.cycleMicrophone();
             }
 
+            while (KeybindRegistry.TOGGLE_OLLAMA_PROGRESS.consumeClick()) {
+               OllamaProgressHud.toggle();
+            }
+
             boolean isKeyDown = KeybindRegistry.PUSH_TO_TALK.isDown();
-            if (isKeyDown && !isRecording) {
-               isRecording = true;
-               TTSHandler.interruptSpeech();
-               RECORDER.startRecording();
-            } else if (!isKeyDown && isRecording) {
+            if (isKeyDown) {
+               releasePaddingTicks = 0;
+               if (!isRecording) {
+                  isRecording = true;
+                  TTSHandler.interruptSpeech();
+                  RECORDER.startRecording();
+               }
+            } else if (isRecording) {
+               if (releasePaddingTicks < 5) {
+                  releasePaddingTicks++;
+                  return;
+               }
+
                isRecording = false;
+               releasePaddingTicks = 0;
                byte[] recordedAudio = RECORDER.stopRecording();
                if (recordedAudio != null && recordedAudio.length > 0) {
                   CompletableFuture.<String>supplyAsync(() -> TTSHandler.transcribeAudio(recordedAudio, RECORDER.getAudioFormat()))
@@ -51,13 +66,14 @@ public class KeybindHandler {
 
    private static void accept(String transcribedText) {
       if (transcribedText != null && !transcribedText.trim().isEmpty()) {
-         String lowerCaseText = transcribedText.trim().toLowerCase();
+         String sanitized = TTSHandler.sanitizeTranscript(transcribedText);
+         String lowerCaseText = sanitized.trim().toLowerCase();
          if (lowerCaseText.equals("thank you.")) {
             return;
          }
 
          Minecraft.getInstance().execute(() -> {
-            String safeText = transcribedText.length() > 256 ? transcribedText.substring(0, 256) : transcribedText;
+            String safeText = sanitized.length() > 256 ? sanitized.substring(0, 256) : sanitized;
             if (Minecraft.getInstance().getConnection() != null) {
                Minecraft.getInstance().getConnection().sendChat(safeText);
             }

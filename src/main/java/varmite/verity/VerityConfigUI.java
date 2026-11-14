@@ -1,5 +1,6 @@
 package varmite.verity;
 
+import dev.isxander.yacl3.api.ButtonOption;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
@@ -8,12 +9,14 @@ import dev.isxander.yacl3.api.StateManager;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.ConfigCategory.Builder;
 import dev.isxander.yacl3.api.OptionEventListener.Event;
+import dev.isxander.yacl3.api.controller.DropdownStringControllerBuilder;
 import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import dev.isxander.yacl3.api.controller.TickBoxControllerBuilder;
 import dev.isxander.yacl3.gui.YACLScreen;
+import java.util.List;
 import java.util.Locale;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -28,7 +31,12 @@ import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
 import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import varmite.verity.client.VerityPreviewTexture;
+import varmite.verity.client.gui.OllamaSetupScreen;
 import varmite.verity.event.ModBusClientSetup;
+import varmite.verity.ollama.OllamaApi;
+import varmite.verity.ollama.OllamaModels;
+import varmite.verity.ollama.OllamaRuntime;
+import varmite.verity.ollama.OllamaSetupManager;
 import varmite.verity.types.AiModelPreset;
 import varmite.verity.types.AiProvider;
 import varmite.verity.types.STTProvider;
@@ -78,6 +86,17 @@ public class VerityConfigUI {
       };
    }
 
+   private static List<String> detectedOllamaModels() {
+      String endpoint = OllamaSetupManager.endpoint();
+      List<OllamaApi.InstalledModel> models = OllamaModels.lastKnown(endpoint);
+      if (models.isEmpty() && OllamaRuntime.isLocalEndpoint(endpoint)) {
+         models = OllamaModels.installed(endpoint, false);
+      }
+
+      OllamaModels.refreshAsync(endpoint);
+      return models.stream().map(OllamaApi.InstalledModel::name).filter(name -> !name.toLowerCase(Locale.ROOT).contains("embed")).toList();
+   }
+
    private static ConfigCategory createAiCategory(Screen previousScreen) {
       AiProvider provider = VerityConfig.AI_PROVIDER.get();
       boolean customModel = provider.requiresCustomModel() || VerityConfig.USE_CUSTOM_AI_MODEL.get();
@@ -90,6 +109,26 @@ public class VerityConfigUI {
                .stateManager(StateManager.createInstant(AiProvider.OPENAI, VerityConfig.AI_PROVIDER, VerityConfig.AI_PROVIDER::set))
                .controller(opt -> EnumControllerBuilder.create(opt).enumClass(AiProvider.class))
                .addListener(refreshAiSettings(previousScreen))
+               .build()
+         )
+         .option(
+            ButtonOption.createBuilder()
+               .name(Component.literal("Local AI Setup (Ollama)"))
+               .text(Component.literal("Open"))
+               .description(
+                  OptionDescription.of(
+                     Component.literal(
+                        "Run Verity's AI on your own PC: free, private, no API key.\n\nInstalls Ollama and downloads a small model with one click, and lists the Ollama models already on this computer."
+                     )
+                  )
+               )
+               .action((screen, option) -> {
+                  if (screen.pendingChanges()) {
+                     screen.finishOrSave();
+                  }
+
+                  Minecraft.getInstance().setScreen(new OllamaSetupScreen(() -> createYACLScreen(previousScreen, true)));
+               })
                .build()
          )
          .option(
@@ -112,7 +151,28 @@ public class VerityConfigUI {
          );
       }
 
-      if (customModel) {
+      if (provider == AiProvider.OLLAMA) {
+         List<String> detected = detectedOllamaModels();
+         category.option(
+            Option.<String>createBuilder()
+               .name(Component.literal("Ollama Model"))
+               .description(
+                  OptionDescription.of(
+                     Component.literal(
+                        (
+                              detected.isEmpty()
+                                 ? "No Ollama models were found on this computer. Use Local AI Setup above to download one."
+                                 : "Detected on this computer:\n" + String.join("\n", detected)
+                           )
+                           + "\n\nLeave empty to let Verity pick an installed model automatically."
+                     )
+                  )
+               )
+               .binding("", VerityConfig.AI_MODEL, VerityConfig.AI_MODEL::set)
+               .controller(opt -> DropdownStringControllerBuilder.create(opt).values(detected).allowAnyValue(true).allowEmptyValue(true))
+               .build()
+         );
+      } else if (customModel) {
          category.option(
             Option.<String>createBuilder()
                .name(Component.literal(provider.requiresCustomModel() ? "Ollama Model" : "Custom AI Model"))
@@ -147,7 +207,13 @@ public class VerityConfigUI {
       return category.option(
             Option.<Boolean>createBuilder()
                .name(Component.literal("Thinking Mode"))
-               .description(OptionDescription.of(Component.literal("(On supported models)\nMakes the AI think longer before answering")))
+               .description(
+                  OptionDescription.of(
+                     Component.literal(
+                        "(On supported models)\nMakes the AI think longer before answering.\n\nLocal models: only applied to models that can think. qwen3 and qwen3.5 need it on to use their tools reliably; models without thinking are fast either way."
+                     )
+                  )
+               )
                .binding(true, VerityConfig.AI_THINK, VerityConfig.AI_THINK::set)
                .controller(TickBoxControllerBuilder::create)
                .build()
