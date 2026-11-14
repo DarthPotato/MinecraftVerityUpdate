@@ -770,6 +770,20 @@ public class ModEvents {
       }
    }
 
+   /**
+    * Port (owner request, 2026-11-14): while someone carries Verity, players within 16 blocks of them can talk to him
+    * too. In 6.0.0 only the carrier could.
+    */
+   private static boolean nearVerityCarrier(ServerPlayer speaker) {
+      for (ServerPlayer other : speaker.level().players()) {
+         if (other != speaker && other.distanceToSqr(speaker) <= 256.0 && hasVerityInInventory(other)) {
+            return true;
+         }
+      }
+
+      return false;
+   }
+
    public static boolean hasVerityInInventory(Player player) {
       if (player == null) {
          return false;
@@ -783,7 +797,7 @@ public class ModEvents {
    public static void onPlayerChat(ServerChatEvent event) {
       ServerPlayer player = event.getPlayer();
       boolean isSpawned = VerityState.hasSpawned && VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved();
-      boolean isInInventory = hasVerityInInventory(player);
+      boolean isInInventory = hasVerityInInventory(player) || nearVerityCarrier(player);
       if (!isSpawned && !isInInventory) {
          System.out.println("Verity is neither spawned nor in player's inventory");
       } else {
