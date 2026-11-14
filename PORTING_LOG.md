@@ -178,3 +178,28 @@ Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerity
 
 **Still open**
 - Config screen saving (fix untested), fish.audio, voice playback and the mic on a PC with audio, two players on the server, and 10 minutes with no errors.
+
+## Stage 3: Host Mode
+
+### 2026-11-13: Host Mode built and tested on a test server
+
+**How it works**
+- New `hostMode` setting (Voice Settings, default off). On the game or server that hosts the world, `HostVoice` makes each spoken line once with that machine's voice settings and streams it to the players tracking Verity (or to the one player, for lines only they hear).
+- Audio goes out as 16-bit PCM in 32 KB pieces (`TtsAudioPayload`, `verity:tts_audio`). `SharedVoicePlayer` plays them with the same distance, panning and muffling as before; a new line interrupts the previous one, and a player's own "Use TTS" off still mutes it.
+- Works with LOCAL (Piper on the server) and the cloud providers (GROQ, KOKORO, CARTESIA, FISH_AUDIO). NATIVE (the OS narrator) cannot run on a server, so it falls back to each player's game.
+- If the voice service fails before any audio is sent, players get the text and make the line with their own settings (as without Host Mode). API keys stay on the host; clients never see them.
+- Cloud request building moved from `TTSHandler` to `voice/TtsRequests` so the server can use it. `LocalTTSBuilder` has a server-safe overload. Network protocol version is now 2, so client and server jars must match.
+- Every spoken line in the code now goes through `HostVoice.say` / `HostVoice.sayTo` (12 call sites).
+
+**fish.audio**
+- Default model `s2.1-pro-free` (the paid default gave the owner HTTP 402). An empty voice ID now means Verity's voice, `711cf3ed00ab441a8f54a45058047b7a`, the public fish.audio voice the "Smiley's Better Voice" add-on uses. Only the voice IDs were taken from that add-on (All Rights Reserved); no code.
+
+**Verified**
+- Standalone NeoForge 26.3 server with the new jar, a dev client joined: with LOCAL the server generated the line (22.05 kHz) and the client received it; with FISH_AUDIO (owner's key, free model, Verity voice) the server got HTTP 200 and streamed 44.1 kHz audio. The client did not make its own voice. Playback itself failed only because the downstairs PC has no audio output.
+
+**Owner decisions (2026-11-13)**
+- The fish.audio key goes in the server's config for Host Mode.
+- One shared Verity per world (as in the original): not yet confirmed by the owner.
+
+**Not verified**
+- Hearing it on a PC with speakers; two players at once.
