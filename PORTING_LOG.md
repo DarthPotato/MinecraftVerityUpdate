@@ -479,4 +479,14 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
       (120 by default), level I-III, instant effects applied once; everyone_nearby = all players within 16 blocks.
     - Prompt: mappings for the three actions; the "saying is not doing" rule lists kill, enchant and buff.
   - No karma gate on the new actions, like give_item (it reads karma but never used it); his personality decides.
+- Tested the new actions on a dev server against Ollama (2026-11-14, nobody playing). First run: enchant worked, but
+  kill, haste and give_item were only claimed ("Here's three iron pickaxes") with no tool call; one of them ran out of
+  thinking at 1024 tokens and the quick retry without thinking only talked. Fix: when the player's message clearly asks
+  for an action (kill, an enchantment name, an effect name, "give me", "can I have", follow, teleport, light it up) and
+  no action ran in any attempt, the claim is dropped from the history and the model is asked once more, with thinking,
+  naming the action (`[Verity AI] Asked for X but no action ran; asking again`). If that also only talks, its reply is
+  shown but kept out of the history (a remembered false "unbreaking added" made the next try fail too). Later runs:
+  kill_mobs (2 zombies, 2 creepers, 2 slimes, a skeleton; the named zombie spared), haste, efficiency, fortune,
+  unbreaking and night vision all applied, the last two through the retry; give_item put 3 iron pickaxes in the
+  inventory. "I need some torches" was still only claimed ("I need" is left out of the triggers on purpose).
 

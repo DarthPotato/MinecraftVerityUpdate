@@ -78,6 +78,26 @@ public class AiAPI {
       Pattern.CASE_INSENSITIVE
    );
    private static volatile Set<String> toolNames;
+   /** Port: requests that clearly ask for an action, in priority order (an effect name before "give me"). */
+   private static final List<Map.Entry<Pattern, String>> REQUESTED_ACTIONS = List.of(
+      Map.entry(Pattern.compile("\\b(kill|slay|get rid of|clear (out )?(the )?(mobs|monsters))\\b"), "kill_mobs"),
+      Map.entry(
+         Pattern.compile(
+            "\\b(enchant|sharpness|smite|efficiency|unbreaking|mending|fortune|looting|silk touch|fire aspect|feather falling|respiration|aqua affinity|depth strider|frost walker|infinity|loyalty|riptide|channeling|impaling|multishot|piercing|quick charge|sweeping edge|thorns|protection)"
+         ),
+         "enchant_held_item"
+      ),
+      Map.entry(
+         Pattern.compile(
+            "\\b(haste|speed|night vision|regen(eration)?|strength|fire resistance|jump boost|invisibility|water breathing|resistance|slow falling|absorption|health boost|saturation|dolphin|luck|buff|potion effect)\\b"
+         ),
+         "give_effect"
+      ),
+      Map.entry(Pattern.compile("\\b(give|drop|hand|get) (me|us)\\b|\\bcan i (have|get)\\b"), "give_item"),
+      Map.entry(Pattern.compile("\\b(follow me|come here|come with me|come over)\\b"), "start_following"),
+      Map.entry(Pattern.compile("\\b(teleport|tp to|get in my (inventory|pocket)|jump in)"), "teleport_to_player"),
+      Map.entry(Pattern.compile("\\b(place a torch|light (this|it) up|too dark)\\b"), "place_torch")
+   );
    private static final Pattern SOUND_TAG = Pattern.compile("\\[sound:\\s*([a-z0-9_.:/-]+)\\s*\\]", 2);
    private static final Pattern THINK_BLOCK = Pattern.compile("(?is)<think>.*?(</think>|$)");
    private static final Pattern ASSISTANT_FILLER = Pattern.compile(
@@ -208,9 +228,11 @@ public class AiAPI {
          String answer = null;
          boolean actionsRan = false;
          boolean karmaToolRan = false;
+         boolean anyActionRan = false;
          try {
             Result<String> result = assistant.chat(finalPrompt);
             karmaToolRan |= logActions(result, player);
+            anyActionRan |= !result.toolExecutions().isEmpty();
             actionsRan = !result.toolExecutions().isEmpty();
             answer = result.content();
             if (answer == null || answer.isBlank()) {
@@ -237,6 +259,7 @@ public class AiAPI {
             try {
                Result<String> again = assistant.chat(nudge);
                karmaToolRan |= logActions(again, player);
+               anyActionRan |= !again.toolExecutions().isEmpty();
                answer = again.content();
                if (answer == null || answer.isBlank()) {
                   answer = leakedReply(again);
@@ -259,6 +282,7 @@ public class AiAPI {
                try {
                   Result<String> second = quick.chat(nudge);
                   karmaToolRan |= logActions(second, player);
+                  anyActionRan |= !second.toolExecutions().isEmpty();
                   answer = second.content();
                   if (answer == null || answer.isBlank()) {
                      answer = leakedReply(second);
@@ -270,6 +294,42 @@ public class AiAPI {
                answer = withoutActionTag(answer);
             } catch (Exception e) {
                Verity.LOGGER.warn("[Verity AI] Second try failed: {}", e.toString());
+            }
+         }
+
+         String missed = useTools && !anyActionRan ? requestedAction(prompt) : null;
+         boolean claimOnly = false;
+         if (missed != null) {
+            // Port fix: qwen3.5 sometimes answers "here you go" without calling the action, so nothing happens (seen with
+            // kill, effects and give_item). The claim is dropped from the history and it is asked once more, with
+            // thinking, naming the action.
+            Verity.LOGGER.info("[Verity AI] Asked for {} but no action ran; asking again", missed);
+            forgetLastReply(store);
+            String nudge = "[" + time + "] <System> The player asked for something your " + missed
+               + " tool does, but you did not call it, so nothing happened. Call " + missed
+               + " now with the arguments the player asked for. Do not reply without calling it unless it is impossible; then say why in one short sentence.";
+            try {
+               Result<String> again = assistant.chat(nudge);
+               karmaToolRan |= logActions(again, player);
+               claimOnly = again.toolExecutions().isEmpty();
+               String retried = again.content();
+               if (retried == null || retried.isBlank()) {
+                  retried = leakedReply(again);
+               }
+
+               if (retried != null && !retried.isBlank()) {
+                  answer = withoutActionTag(retried);
+               }
+            } catch (RuntimeException e) {
+               Verity.LOGGER.warn("[Verity AI] Second try failed: {}", e.toString());
+            } finally {
+               forgetUserMessage(store, nudge);
+            }
+
+            if (claimOnly) {
+               // Still no action: the reply is kept out of the history, or the model "remembers" doing it next time.
+               Verity.LOGGER.info("[Verity AI] Still no {} after asking again", missed);
+               forgetLastReply(store);
             }
          }
 
@@ -289,7 +349,7 @@ public class AiAPI {
 
          if (answer == null || answer.isBlank()) {
             answer = "...";
-         } else {
+         } else if (!claimOnly) {
             rememberReply(store, answer);
          }
 
@@ -521,6 +581,31 @@ public class AiAPI {
 
       Matcher m = ACTION_TAG.matcher(reply);
       return m.lookingAt() ? reply.substring(m.end()) : reply;
+   }
+
+   /** The action a player's message clearly asks for, or null. */
+   private static String requestedAction(String message) {
+      if (message == null) {
+         return null;
+      }
+
+      String text = message.toLowerCase(Locale.ROOT);
+      for (Map.Entry<Pattern, String> entry : REQUESTED_ACTIONS) {
+         if (entry.getKey().matcher(text).find() && toolNames().contains(entry.getValue())) {
+            return entry.getValue();
+         }
+      }
+
+      return null;
+   }
+
+   /** Drops the last saved reply when it is plain text (a claim that the retry replaces). */
+   private static void forgetLastReply(MinecraftChatMemoryStore store) {
+      List<ChatMessage> messages = new ArrayList<>(store.getMessages(GLOBAL_MEMORY_ID));
+      if (!messages.isEmpty() && messages.get(messages.size() - 1) instanceof AiMessage last && !last.hasToolExecutionRequests()) {
+         messages.remove(messages.size() - 1);
+         store.updateMessages(GLOBAL_MEMORY_ID, messages);
+      }
    }
 
    /** Removes a retry prompt from the saved history once it has done its job. */
