@@ -393,3 +393,9 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
   the server to the owner.
 - Local AI Setup confirmations (as in 6.0.0): deleting a model and removing Ollama ask first; installing Ollama and
   downloading a model start at once and can be cancelled.
+- Restored lookups tried with the AI (26.3 dev): get_player_inventory, get_nearby_entities, get_own_coords and
+  get_old_base_location were each called for the matching question and answered correctly.
+- The leaked-reply fallback now also takes a reply that qwen3.5 writes at the end of its thinking, after the
+  reasoning (seen on the old-base question): the last line starting with a [tag] is used. Re-tested: all replies came
+  through, including five that had leaked.
+

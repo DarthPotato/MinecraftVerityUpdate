@@ -67,6 +67,7 @@ public class AiAPI {
       2
    );
    private static final Pattern LEADING_TAG = Pattern.compile("^\\[([a-z0-9_ ]{1,24})\\]\\s*", Pattern.CASE_INSENSITIVE);
+   private static final Pattern TAGGED_LINE = Pattern.compile("^\\[[a-z0-9_ ]{1,24}\\]", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
    private static final Pattern SOUND_TAG = Pattern.compile("\\[sound:\\s*([a-z0-9_.:/-]+)\\s*\\]", 2);
    private static final Pattern THINK_BLOCK = Pattern.compile("(?is)<think>.*?(</think>|$)");
    private static final Pattern ASSISTANT_FILLER = Pattern.compile(
@@ -269,8 +270,8 @@ public class AiAPI {
 
    /**
     * Port fix: after a tool call, qwen3.5 on Ollama sometimes puts its whole spoken reply in the thinking field and
-    * leaves the reply empty (6.0.0 then says "..."). A leaked reply starts with a [tag], as the prompt asks for a face
-    * tag first; real reasoning never does, so only that is used.
+    * leaves the reply empty (6.0.0 then says "..."), sometimes after its reasoning. A leaked reply starts a line with a
+    * [tag], as the prompt asks for a face tag first; reasoning does not, so only that part is used.
     */
    private static String leakedReply(Result<String> result) {
       ChatResponse response = result.finalResponse();
@@ -279,14 +280,26 @@ public class AiAPI {
          return null;
       }
 
-      String trimmed = thinking.trim();
-      Matcher tag = LEADING_TAG.matcher(trimmed);
-      if (trimmed.length() > 400 || !tag.lookingAt()) {
+      // The reply is the whole thinking text, or its last paragraph after the reasoning; either way it starts a line
+      // with a [tag].
+      int start = -1;
+      Matcher line = TAGGED_LINE.matcher(thinking);
+      while (line.find()) {
+         start = line.start();
+      }
+
+      if (start < 0) {
+         return null;
+      }
+
+      String reply = thinking.substring(start).trim();
+      Matcher tag = LEADING_TAG.matcher(reply);
+      if (reply.length() > 400 || !tag.lookingAt()) {
          return null;
       }
 
       // A real face tag stays for processInlineTags; a made-up one ("[talking]") is dropped.
-      return EXPRESSION_TAG.matcher(trimmed).lookingAt() ? trimmed : trimmed.substring(tag.end());
+      return EXPRESSION_TAG.matcher(reply).lookingAt() ? reply : reply.substring(tag.end());
    }
 
    private static long pruneToolHistory(MinecraftChatMemoryStore store) {
