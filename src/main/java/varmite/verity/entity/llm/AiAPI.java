@@ -1,5 +1,6 @@
 package varmite.verity.entity.llm;
 
+import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecifications;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -69,6 +71,8 @@ public class AiAPI {
    );
    private static final Pattern LEADING_TAG = Pattern.compile("^\\[([a-z0-9_ ]{1,24})\\]\\s*", Pattern.CASE_INSENSITIVE);
    private static final Pattern TAGGED_LINE = Pattern.compile("^\\[[a-z0-9_ ]{1,24}\\]", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
+   private static final Pattern ACTION_TAG = Pattern.compile("^\\s*\\[([a-z_]{3,40})\\]\\s*", Pattern.CASE_INSENSITIVE);
+   private static volatile Set<String> toolNames;
    private static final Pattern SOUND_TAG = Pattern.compile("\\[sound:\\s*([a-z0-9_.:/-]+)\\s*\\]", 2);
    private static final Pattern THINK_BLOCK = Pattern.compile("(?is)<think>.*?(</think>|$)");
    private static final Pattern ASSISTANT_FILLER = Pattern.compile(
@@ -197,9 +201,11 @@ public class AiAPI {
          String time = LocalDateTime.now().format(fmt);
          String finalPrompt = "[" + time + "] " + prompt;
          String answer = null;
+         boolean actionsRan = false;
          try {
             Result<String> result = assistant.chat(finalPrompt);
             logActions(result, player);
+            actionsRan = !result.toolExecutions().isEmpty();
             answer = result.content();
             if (answer == null || answer.isBlank()) {
                answer = leakedReply(result);
@@ -214,20 +220,48 @@ public class AiAPI {
             Verity.LOGGER.warn("[Verity AI] Reply failed ({}); asking again without thinking", e.getMessage());
          }
 
+         String faked = useTools && !actionsRan ? actionTag(answer) : null;
+         if (faked != null) {
+            // Port fix: qwen3.5 sometimes writes an action in the style of its face tags ("[give_item]") instead of
+            // using it, so nothing happens. Ask once more, naming the action.
+            Verity.LOGGER.info("[Verity AI] Wrote [{}] instead of doing it; asking again", faked);
+            String nudge = "[" + time + "] <System> You only wrote [" + faked + "] as text, which does nothing. If the player asked for it, use the "
+               + faked + " tool now, then answer the player in one short sentence.";
+            answer = null;
+            try {
+               Result<String> again = assistant.chat(nudge);
+               logActions(again, player);
+               answer = again.content();
+               if (answer == null || answer.isBlank()) {
+                  answer = leakedReply(again);
+               }
+            } catch (RuntimeException e) {
+               Verity.LOGGER.warn("[Verity AI] Second try failed: {}", e.toString());
+            }
+
+            forgetUserMessage(store, nudge);
+         }
+
+         answer = withoutActionTag(answer);
          if ((answer == null || answer.isBlank()) && thinkingOn) {
             // Port fix: qwen3.5 sometimes thinks until it runs out of room and never answers. Ask once more without
             // thinking (a second or two) instead of saying "...".
             try {
                Verity.LOGGER.info("[Verity AI] No reply after thinking; asking again without thinking");
                AiAPI.Assistant quick = assistant(builder.setOllamaThink(false).build(), memory, systemPrompt, useTools ? tools : null);
-               Result<String> second = quick.chat(
-                  "[" + time + "] <System> Your last reply was cut off. Answer the player's last message now, in one or two short sentences."
-               );
-               logActions(second, player);
-               answer = second.content();
-               if (answer == null || answer.isBlank()) {
-                  answer = leakedReply(second);
+               String nudge = "[" + time + "] <System> Your last reply was cut off. Answer the player's last message now, in one or two short sentences.";
+               try {
+                  Result<String> second = quick.chat(nudge);
+                  logActions(second, player);
+                  answer = second.content();
+                  if (answer == null || answer.isBlank()) {
+                     answer = leakedReply(second);
+                  }
+               } finally {
+                  forgetUserMessage(store, nudge);
                }
+
+               answer = withoutActionTag(answer);
             } catch (Exception e) {
                Verity.LOGGER.warn("[Verity AI] Second try failed: {}", e.toString());
             }
@@ -235,6 +269,8 @@ public class AiAPI {
 
          if (answer == null || answer.isBlank()) {
             answer = "...";
+         } else {
+            rememberReply(store, answer);
          }
 
          answer = processInlineTags(answer, verity, player, level);
@@ -357,17 +393,24 @@ public class AiAPI {
       List<ChatMessage> kept = new ArrayList<>(messages.size());
       long chars = 0L;
 
+      boolean changed = false;
+
       for (ChatMessage message : messages) {
          if (!(message instanceof ToolExecutionResultMessage)) {
-            if (message instanceof AiMessage ai && ai.hasToolExecutionRequests()) {
-               if (ai.text() == null || ai.text().isBlank()) {
+            if (message instanceof AiMessage ai) {
+               // 6.0.0 drops action calls and keeps only their text. Port: fake "[give_item]" tags are removed too, and
+               // a turn left with no text (a reply that went into the thinking) is dropped, so the model does not learn
+               // either habit from its own history. Thinking is kept out of the saved history.
+               String text = withoutActionTag(ai.text());
+               if (text == null || text.isBlank()) {
+                  changed = true;
                   continue;
                }
 
-               message = AiMessage.from(ai.text());
-            } else if (message instanceof AiMessage ai && ai.thinking() != null && ai.text() != null) {
-               // Thinking is kept out of the saved history (it is never sent back to the model anyway).
-               message = AiMessage.from(ai.text());
+               if (ai.hasToolExecutionRequests() || ai.thinking() != null || !text.equals(ai.text())) {
+                  message = AiMessage.from(text);
+                  changed = true;
+               }
             }
 
             kept.add(message);
@@ -381,11 +424,76 @@ public class AiAPI {
          }
       }
 
-      if (kept.size() != messages.size()) {
+      if (changed || kept.size() != messages.size()) {
          store.updateMessages("verity-chat-memory", kept);
       }
 
       return chars;
+   }
+
+   private static Set<String> toolNames() {
+      Set<String> names = toolNames;
+      if (names == null) {
+         try {
+            names = ToolSpecifications.toolSpecificationsFrom(Tools.class).stream().map(ToolSpecification::name).collect(Collectors.toUnmodifiableSet());
+         } catch (RuntimeException e) {
+            Verity.LOGGER.warn("[Verity AI] Could not list actions: {}", e.toString());
+            names = Set.of();
+         }
+
+         toolNames = names;
+      }
+
+      return names;
+   }
+
+   /** The action named by a leading "[action_name]" tag in a reply, or null. */
+   private static String actionTag(String reply) {
+      if (reply == null) {
+         return null;
+      }
+
+      Matcher m = ACTION_TAG.matcher(reply);
+      if (!m.lookingAt()) {
+         return null;
+      }
+
+      String name = m.group(1).toLowerCase(Locale.ROOT);
+      return toolNames().contains(name) ? name : null;
+   }
+
+   private static String withoutActionTag(String reply) {
+      if (actionTag(reply) == null) {
+         return reply;
+      }
+
+      Matcher m = ACTION_TAG.matcher(reply);
+      return m.lookingAt() ? reply.substring(m.end()) : reply;
+   }
+
+   /** Removes a retry prompt from the saved history once it has done its job. */
+   private static void forgetUserMessage(MinecraftChatMemoryStore store, String text) {
+      List<ChatMessage> messages = new ArrayList<>(store.getMessages(GLOBAL_MEMORY_ID));
+      for (int i = messages.size() - 1; i >= 0; i--) {
+         if (messages.get(i) instanceof UserMessage user && user.hasSingleText() && text.equals(user.singleText())) {
+            messages.remove(i);
+            store.updateMessages(GLOBAL_MEMORY_ID, messages);
+            return;
+         }
+      }
+   }
+
+   /** The saved last reply becomes what Verity actually said, when it was empty or a bare action tag. */
+   private static void rememberReply(MinecraftChatMemoryStore store, String answer) {
+      List<ChatMessage> messages = new ArrayList<>(store.getMessages(GLOBAL_MEMORY_ID));
+      if (messages.isEmpty() || !(messages.get(messages.size() - 1) instanceof AiMessage last) || last.hasToolExecutionRequests()) {
+         return;
+      }
+
+      if (last.text() == null || last.text().isBlank() || actionTag(last.text()) != null) {
+         messages.set(messages.size() - 1, AiMessage.from(answer));
+         store.updateMessages(GLOBAL_MEMORY_ID, messages);
+      }
    }
 
    private static long toolSpecChars(Tools tools) {
