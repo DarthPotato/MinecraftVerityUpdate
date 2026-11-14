@@ -264,7 +264,7 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
   plays.
 
 **Live server, two players (old 19:42 Host Mode jar)**
-- One shared Verity: one conversation for everyone, messages tagged with the speaker. When both talk at once she
+- One shared Verity: one conversation for everyone, messages tagged with the speaker. When both talk at once he
   mixes up who asked what. Same design in 6.0.0.
 - The owner's lines are speech-to-text, so the mic and STT work in multiplayer.
 - "No answer provided" replies were the qwen3.5 thinking-field bug, fixed in the port build.
