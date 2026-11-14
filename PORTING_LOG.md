@@ -379,4 +379,7 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
 - The owner's lines are speech-to-text, so the mic and STT work in multiplayer.
 - "No answer provided" replies were the qwen3.5 thinking-field bug, fixed in the port build.
 - Items drop where Verity's body is, not at the player who asked (6.0.0 too, although its tool says "at the player's
-  feet"). Offered to change it; not changed.
+  feet"). Owner: keep it as it is for now.
+- Talking to Verity while another player carries him: chat only goes through when Verity is out in the world or in
+  the speaker's own inventory, so when Logan carried him the owner could not talk to him (6.0.0 works the same way).
+- Updated the owner's server to the 6.0.0 port jar at 12:43 (old jar kept in mods_old).
