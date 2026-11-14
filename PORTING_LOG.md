@@ -313,4 +313,16 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
   with no pickup delay, so they went straight into the inventory unseen. They now pop out 1.5 blocks in front of the
   player with a one-second pickup delay. Drops while his body is out are unchanged (owner: keep them as they are).
 - Not tried against Ollama yet (players online on the shared Ollama).
+- "Verity isn't even doing stuff" (owner, 13:58). The chat history and Ollama's log showed qwen3.5 replying with just
+  "[start_following]" or "[give_item]", written like its face tags, in a single model call: no action ran. "Sure thing.
+  Jumping in now." was also words only. Each fake reply stayed in the saved history (6.0.0 strips the real action calls
+  from it), which made the habit stronger. Fixes:
+  - A reply that starts with an action name in brackets, when no action ran, gets one more try that tells the model
+    to use that action (`[Verity AI] Wrote [x] instead of doing it; asking again` in the log). Any leftover action tag
+    is removed from what Verity says.
+  - The saved history keeps what Verity actually said: fake action tags and empty turns (a reply that went into the
+    thinking) are removed, a recovered reply is saved as his reply, and the retry prompts are deleted afterwards.
+- Owner: "he dropped the glass but not the lava". The lava bucket turn made three model calls, so the action ran; on
+  the old jar, with Verity carried, it landed on the player's feet with no pickup delay. The new jar logs each action,
+  so the next report can be checked.
 
