@@ -11,6 +11,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.Result;
+import dev.langchain4j.service.tool.ToolExecution;
 import dev.langchain4j.service.tool.ToolErrorHandlerResult;
 import java.net.ConnectException;
 import java.net.URI;
@@ -174,6 +175,7 @@ public class AiAPI {
             .setEndpoint(endpoint)
             .setThinking(VerityConfig.AI_THINK.get());
          boolean useTools = true;
+         boolean thinkingOn = false;
          startLocalOllama(endpoint);
          if (LLMBuilder.isOllama(endpoint)) {
             // 6.0.0: think only on models that can, offer tools only to models that support them, and size the context to the prompt.
@@ -186,32 +188,38 @@ public class AiAPI {
 
             long promptChars = systemPrompt.length() + historyChars + (useTools ? toolSpecChars(tools) : 0L);
             builder.setOllamaThink(think).setContextSize(OllamaContext.contextFor(modelName, promptChars, Boolean.TRUE.equals(think)));
+            thinkingOn = Boolean.TRUE.equals(think);
          }
 
-         ChatModel model = builder.build();
          MessageWindowChatMemory memory = MessageWindowChatMemory.builder().id("verity-chat-memory").maxMessages(25).chatMemoryStore(store).build();
-         String finalSystemPrompt = systemPrompt;
-         AiServices<AiAPI.Assistant> services = AiServices.builder(AiAPI.Assistant.class)
-            .chatModel(model)
-            .chatMemory(memory)
-            .systemMessageProvider(id -> finalSystemPrompt);
-         if (useTools) {
-            services.tools(new Object[]{tools})
-               .hallucinatedToolNameStrategy(req -> ToolExecutionResultMessage.from(req, "Error: tool " + req.name() + " does not exist."))
-               .toolExecutionErrorHandler((err, ctx) -> {
-                  Verity.LOGGER.error("[Verity AI] Tool error: {}", err.getMessage());
-                  return ToolErrorHandlerResult.text("Tool failed: " + err.getMessage());
-               });
-         }
-
-         AiAPI.Assistant assistant = (AiAPI.Assistant)services.build();
+         AiAPI.Assistant assistant = assistant(builder.build(), memory, systemPrompt, useTools ? tools : null);
          DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
          String time = LocalDateTime.now().format(fmt);
          String finalPrompt = "[" + time + "] " + prompt;
          Result<String> result = assistant.chat(finalPrompt);
+         logActions(result, player);
          String answer = result.content();
          if (answer == null || answer.isBlank()) {
             answer = leakedReply(result);
+         }
+
+         if ((answer == null || answer.isBlank()) && thinkingOn) {
+            // Port fix: qwen3.5 sometimes thinks until it runs out of room and never answers. Ask once more without
+            // thinking (a second or two) instead of saying "...".
+            try {
+               Verity.LOGGER.info("[Verity AI] Thinking ran out without a reply; asking again without thinking");
+               AiAPI.Assistant quick = assistant(builder.setOllamaThink(false).build(), memory, systemPrompt, useTools ? tools : null);
+               Result<String> second = quick.chat(
+                  "[" + time + "] <System> Your last reply was cut off. Answer the player's last message now, in one or two short sentences."
+               );
+               logActions(second, player);
+               answer = second.content();
+               if (answer == null || answer.isBlank()) {
+                  answer = leakedReply(second);
+               }
+            } catch (Exception e) {
+               Verity.LOGGER.warn("[Verity AI] Second try failed: {}", e.toString());
+            }
          }
 
          if (answer == null || answer.isBlank()) {
@@ -300,6 +308,37 @@ public class AiAPI {
 
       // A real face tag stays for processInlineTags; a made-up one ("[talking]") is dropped.
       return EXPRESSION_TAG.matcher(reply).lookingAt() ? reply : reply.substring(tag.end());
+   }
+
+   private static AiAPI.Assistant assistant(ChatModel model, MessageWindowChatMemory memory, String systemPrompt, Tools tools) {
+      AiServices<AiAPI.Assistant> services = AiServices.builder(AiAPI.Assistant.class)
+         .chatModel(model)
+         .chatMemory(memory)
+         .systemMessageProvider(id -> systemPrompt);
+      if (tools != null) {
+         services.tools(new Object[]{tools})
+            .hallucinatedToolNameStrategy(req -> ToolExecutionResultMessage.from(req, "Error: tool " + req.name() + " does not exist."))
+            .toolExecutionErrorHandler((err, ctx) -> {
+               Verity.LOGGER.error("[Verity AI] Tool error: {}", err.getMessage());
+               return ToolErrorHandlerResult.text("Tool failed: " + err.getMessage());
+            });
+      }
+
+      return services.build();
+   }
+
+   /** Port: every action Verity takes goes to the server log, so problems can be traced without dev mode. */
+   private static void logActions(Result<String> result, ServerPlayer player) {
+      for (ToolExecution te : result.toolExecutions()) {
+         String outcome = te.result() == null ? "" : te.result().replace('\n', ' ');
+         Verity.LOGGER.info(
+            "[Verity AI] {} -> {}({}) = {}",
+            player == null ? "?" : player.getName().getString(),
+            te.request().name(),
+            te.request().arguments(),
+            outcome.length() > 160 ? outcome.substring(0, 160) + "..." : outcome
+         );
+      }
    }
 
    private static long pruneToolHistory(MinecraftChatMemoryStore store) {

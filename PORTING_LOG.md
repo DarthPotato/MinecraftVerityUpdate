@@ -412,4 +412,15 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
 - Open (owner, for later): when the player carrying Verity logs off, Verity goes offline with them, because he is an
   item in their inventory (saved with their player data, returned when they rejoin; same in 6.0.0). Options: on logout,
   put him back into the world where they stood, or move him to the nearest online player.
+- Still slow at times (owner). Ollama's log on the live server: most calls generate 100-800 tokens (1-9 s), but now
+  and then qwen3.5 thinks all the way to the 3,072-token cap (38 s) and gives no reply ("..."); with one Ollama slot,
+  everyone else waits behind it. Changes: thinking capped at 1,536 tokens (~19 s), and when thinking runs out without
+  a reply Verity asks once more with thinking off. Context reserve follows the cap (still 12K here). Suggested to the
+  owner: `OLLAMA_NUM_PARALLEL=2` so two requests can run at once (8.4 GB free on the GPU; KV for 12K is ~200 MB).
+- Every action Verity takes is now logged on the server (`[Verity AI] <player> -> tool(args) = result`), so reports
+  like "he didn't drop it" can be checked without dev mode.
+- "When he's held he doesn't drop stuff" (owner): with Verity carried, items were dropped exactly at the player's feet
+  with no pickup delay, so they went straight into the inventory unseen. They now pop out 1.5 blocks in front of the
+  player with a one-second pickup delay. Drops while his body is out are unchanged (owner: keep them as they are).
+- Not tried against Ollama yet (players online on the shared Ollama).
 

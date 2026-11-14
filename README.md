@@ -83,7 +83,9 @@ In singleplayer or when you "Open to LAN", your own game is the server, so your 
      endpoint is then `http://<Ollama PC's LAN IP>:11434/v1`.
    - Only the Minecraft server talks to Ollama. Players' games never do.
    - Verity sets the context size per request (8K and up), so Ollama's context-length setting does not matter for
-     it. Do not point two servers with different Verity versions at one Ollama at the same time: they keep making it
+     it. With two or more players, setting `OLLAMA_NUM_PARALLEL=2` on the Ollama PC (and restarting Ollama) lets
+     it answer two people at once instead of queueing them; it needs a little more video memory (about 200 MB extra
+     at 12K with qwen3.5:9b). Do not point two servers with different Verity versions at one Ollama at the same time: they keep making it
      reload the model.
 2. **Server**: the NeoForge server for this Minecraft version, with the Verity jar and GeckoLib in `mods/` (YACL is
    not needed on a server). Start it once so it writes `config/verity-common.toml`, then stop it.
