@@ -50,6 +50,7 @@ import varmite.verity.entity.llm.builder.LLMBuilder;
 import varmite.verity.entity.llm.builder.PromptBuilder;
 import varmite.verity.entity.llm.store.chat.ChatMemoryManager;
 import varmite.verity.entity.llm.store.chat.MinecraftChatMemoryStore;
+import varmite.verity.event.Karma;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.entity.llm.builder.LLMBuilder;
 import varmite.verity.environment.items.ModItems;
@@ -279,10 +280,10 @@ public class AiAPI {
          }
 
          if (level != null && player != null) {
-            WorldSpawnData spawnData = WorldSpawnData.get(level);
-            if (spawnData.verityKarma < 7.0F) {
+            float karma = Karma.get(level, player);
+            if (karma < 7.0F) {
                ModTriggers.BAD_KARMA_TRIGGER.get().trigger(player);
-            } else if (spawnData.verityKarma > 14.0F) {
+            } else if (karma > 14.0F) {
                ModTriggers.GOOD_KARMA_TRIGGER.get().trigger(player);
             }
          }

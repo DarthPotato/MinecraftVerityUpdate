@@ -9,6 +9,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import varmite.verity.event.ModEvents;
+import varmite.verity.event.Karma;
 
 public class ChangeKarmaCommand {
    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
@@ -20,9 +21,9 @@ public class ChangeKarmaCommand {
                      context -> {
                         ServerPlayer player = ((CommandSourceStack)context.getSource()).getPlayerOrException();
                         ServerLevel serverLevel = player.level();
-                        serverLevel.getServer().execute(() -> ModEvents.setAndSyncKarma(serverLevel, IntegerArgumentType.getInteger(context, "karma")));
+                        serverLevel.getServer().execute(() -> Karma.set(serverLevel, player, IntegerArgumentType.getInteger(context, "karma")));
                         ((CommandSourceStack)context.getSource())
-                           .sendSuccess(() -> Component.literal("Karma updated to " + IntegerArgumentType.getInteger(context, "karma") + "."), false);
+                           .sendSuccess(() -> Component.literal("Your karma updated to " + IntegerArgumentType.getInteger(context, "karma") + "."), false);
                         return 1;
                      }
                   )

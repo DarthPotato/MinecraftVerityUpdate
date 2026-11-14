@@ -15,6 +15,7 @@ import varmite.verity.VerityConfig;
 import varmite.verity.entity.demon.VerityDemonEntity;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.event.HostileEvents;
+import varmite.verity.event.Karma;
 import varmite.verity.event.WorldSpawnData;
 import varmite.verity.voice.HostVoice;
 
@@ -26,7 +27,7 @@ public class AiManager {
          MinecraftServer server = level.getServer();
          WorldSpawnData worldData = WorldSpawnData.get(level);
          long currentDay = HostileEvents.progressionActive(level) ? level.getOverworldClockTime() / 24000L : 0L;
-         float currentKarma = worldData.verityKarma;
+         float currentKarma = Karma.get(level, player);
          boolean demonLoose = worldData.hasLiveDemon();
          CompletableFuture.<String>supplyAsync(() -> {
             Thread.currentThread().setContextClassLoader(classLoader);
