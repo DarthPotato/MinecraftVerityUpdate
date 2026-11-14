@@ -21,6 +21,7 @@ import net.minecraft.world.item.Item.Properties;
 import net.neoforged.neoforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
 import varmite.verity.entity.ModEntities;
+import varmite.verity.entity.VerityState;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.ModEvents;
@@ -136,7 +137,7 @@ public class VerityItem extends Item {
          if (itemEntity.level() instanceof ServerLevel serverLevel && serverLevel.getNearestPlayer(itemEntity, 256.0) instanceof ServerPlayer p) {
             ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
             StackData.update(stack, tag -> tag.putString("VerityVariant", "serious_3"));
-            p.getInventory().add(stack);
+            VerityState.giveOrDrop(p, stack);
             p.sendSystemMessage(Component.literal("<Verity> Ayo chat why u let me explode"));
             HostVoice.sayTo(p, "Ayo chat why u let me explode");
             serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));
@@ -147,7 +148,7 @@ public class VerityItem extends Item {
          if (serverLevel.getNearestPlayer(itemEntity, 256.0) instanceof ServerPlayer p) {
             ItemStack stack = new ItemStack(ModItems.VERITY_ITEM.get());
             StackData.update(stack, tag -> tag.putString("VerityVariant", "serious_3"));
-            p.getInventory().add(stack);
+            VerityState.giveOrDrop(p, stack);
             p.sendSystemMessage(Component.literal("<Verity> DON'T DO THAT."));
             HostVoice.sayTo(p, "DO NOT DO THAT!");
             serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));

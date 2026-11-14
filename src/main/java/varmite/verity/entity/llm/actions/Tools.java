@@ -287,12 +287,12 @@ public class Tools {
             ItemStack retStack = new ItemStack(ModItems.VERITY_ITEM.get());
             String variant = VerityState.verityEntity.getVariant();
             StackData.update(retStack, retTag -> retTag.putString("VerityVariant", variant));
-            this.player.getInventory().add(retStack);
+            boolean inInventory = VerityState.giveOrDrop(this.player, retStack);
 
             VerityState.verityEntity.discard();
             VerityState.verityEntity = null;
             VerityState.hasSpawned = false;
-            return "Returned to inventory.";
+            return inInventory ? "Returned to inventory." : "The player's inventory is full, so you landed at their feet instead.";
          } else {
             return "Already with player.";
          }

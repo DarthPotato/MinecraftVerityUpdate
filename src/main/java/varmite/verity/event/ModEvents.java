@@ -306,7 +306,7 @@ public class ModEvents {
       if (event.getEntity().getItem().is(ModItems.VERITY_ITEM.get()) && event.getEntity().level() instanceof ServerLevel serverLevel) {
          Player p = serverLevel.getNearestPlayer(event.getEntity(), 256.0);
          if (p != null) {
-            p.getInventory().add(new ItemStack(ModItems.VERITY_ITEM.get()));
+            VerityState.giveOrDrop(p, new ItemStack(ModItems.VERITY_ITEM.get()));
             serverLevel.playSound((Player)null, p.blockPosition(), SoundEvents.GHAST_HURT, SoundSource.PLAYERS, 1.0F, 1.0F);
             p.sendSystemMessage(Component.literal("<Verity> Ayo chat why u lettin me despawn like that"));
             HostVoice.say(p, "Ayo chat why u lettin me despawn like that");
@@ -693,7 +693,7 @@ public class ModEvents {
 
                StackData.set(stack, itemNbt);
                stack.set(DataComponents.CUSTOM_NAME, Component.literal(name));
-               player.getInventory().add(stack);
+               VerityState.giveOrDrop(player, stack);
                VerityState.hasSpawned = false;
                verity.discard();
             }

@@ -435,4 +435,12 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
 - Owner: "he dropped the glass but not the lava". The lava bucket turn made three model calls, so the action ran; on
   the old jar, with Verity carried, it landed on the player's feet with no pickup delay. The new jar logs each action,
   so the next report can be checked.
+- Verity vanished after the demon event (owner, 14:15). The saved world has no Verity anywhere (entities, containers,
+  inventories). Every path that turns him into an item and hands it to a player (`teleport_to_player`, the owner
+  dying, the rescues after lava, cactus, explosions and despawning) called Inventory.add and ignored a full inventory,
+  so with a full inventory his body was deleted and the item never arrived. On 26.3 `teleport_to_player` had lost the
+  drop fallback when porting (`placeItemBackInInventory` changed signature); the other paths were like that in 6.0.0
+  as well. All of them now use `VerityState.giveOrDrop`: into the inventory, or dropped at the player's feet, where
+  the item turns back into Verity a second later. Recovery on the live world: `/give <player> verity:verity_item`
+  (memories, karma and chat history are kept in the world, not in the item).
 
