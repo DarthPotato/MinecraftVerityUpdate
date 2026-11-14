@@ -288,4 +288,15 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
 - The leaked-reply fallback now also takes a reply that qwen3.5 writes at the end of its thinking, after the
   reasoning (seen on the old-base question): the last line starting with a [tag] is used. Re-tested: all replies came
   through, including five that had leaked.
+- Live server, two players: Verity would not come when asked. Causes (all as in 6.0.0): follow mode only walks to his
+  owner (whoever was nearest when he landed, or placed him), he can only plan a path about 32 blocks, and 6.0.0
+  reworded the inventory-jump action to "get back in their inventory or pocket", so "teleport to me" no longer
+  matched and he refused. Owner approved the fixes:
+  - `start_following` makes the asker his owner, and the follow goal hops him to a free spot next to them (vanilla
+    pet logic) when he is 24+ blocks away.
+  - The inventory-jump action is described as teleporting to the player again ("teleport to me, get in my inventory").
+  - Making the asker the owner also means Verity returns to them as an item if they die without keepInventory.
+- Context size: Ollama ran at 8K with ~5,600-token prompts and up to 3,072 tokens of thinking and reply, and one reply
+  hit the limit (`truncated = 1` in Ollama's log, a "..." in chat). 6.0.0 reserves 1,536 tokens for a thinking reply
+  while allowing 3,072; the port now reserves the full budget plus slack, which gives 12K here.
 
