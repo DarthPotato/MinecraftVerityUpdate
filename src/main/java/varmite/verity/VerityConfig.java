@@ -4,6 +4,7 @@ import net.neoforged.neoforge.common.ModConfigSpec;
 import net.neoforged.neoforge.common.ModConfigSpec.BooleanValue;
 import net.neoforged.neoforge.common.ModConfigSpec.Builder;
 import net.neoforged.neoforge.common.ModConfigSpec.ConfigValue;
+import net.neoforged.neoforge.common.ModConfigSpec.DoubleValue;
 import net.neoforged.neoforge.common.ModConfigSpec.EnumValue;
 import varmite.verity.types.HostileEvent;
 import varmite.verity.types.STTProvider;
@@ -33,6 +34,7 @@ public class VerityConfig {
    public static final ConfigValue<String> FISH_API_KEY;
    public static final ConfigValue<String> FISH_VOICE_ID;
    public static final ConfigValue<String> FISH_MODEL;
+   public static final DoubleValue FISH_SPEED;
    public static final EnumValue<TTSLanguage> TTS_LANGUAGE;
    public static final ConfigValue<String> ENDPOINT_VOICE;
    public static final ConfigValue<String> KOKORO_MODEL;
@@ -75,9 +77,10 @@ public class VerityConfig {
       VOICE = builder.comment("Choose the voice Verity has (GROQ, Local)").define("voice", "Daniel");
       TTS_API_KEY = builder.comment("Your TTS API Key (Cartesia)").define("ttsApiKey", "");
       FISH_API_KEY = builder.comment("Your fish.audio API key (FISH_AUDIO provider)").define("fishApiKey", "");
-      FISH_VOICE_ID = builder.comment("fish.audio voice model ID (FISH_AUDIO provider). Empty uses the default voice.").define("fishVoiceId", "");
+      FISH_VOICE_ID = builder.comment("fish.audio voice model ID (FISH_AUDIO provider). Empty uses Verity's voice (711cf3ed00ab441a8f54a45058047b7a).").define("fishVoiceId", "");
       FISH_MODEL = builder.comment("fish.audio model (FISH_AUDIO provider): s2.1-pro-free (free tier), s2.1-pro, s2-pro, s1. Empty uses fish.audio's default.")
          .define("fishModel", "s2.1-pro-free");
+      FISH_SPEED = builder.comment("fish.audio speaking speed (FISH_AUDIO provider). 1.0 is normal.").defineInRange("fishSpeed", 1.0, 0.5, 2.0);
       TTS_LANGUAGE = builder.comment("The language Verity speaks (Cartesia)").defineEnum("ttsLanguage", TTSLanguage.English);
       ENDPOINT_VOICE = builder.comment("The voice the selected TTS Provider uses (Cartesia Voice ID, Kokoro)").define("endpointVoice", "am_fenrir");
       KOKORO_MODEL = builder.comment("Model for Kokoro").define("kokoroModel", "");

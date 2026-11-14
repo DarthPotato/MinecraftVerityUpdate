@@ -458,8 +458,13 @@ public class TTSHandler {
          } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.FISH_AUDIO) {
             json.addProperty("text", text);
             String voiceId = VerityConfig.FISH_VOICE_ID.get().trim();
-            if (!voiceId.isEmpty()) {
-               json.addProperty("reference_id", voiceId);
+            // Empty means Verity's own fish.audio voice.
+            json.addProperty("reference_id", voiceId.isEmpty() ? "711cf3ed00ab441a8f54a45058047b7a" : voiceId);
+            double speed = VerityConfig.FISH_SPEED.get();
+            if (Math.abs(speed - 1.0) > 0.001) {
+               JsonObject prosody = new JsonObject();
+               prosody.addProperty("speed", speed);
+               json.add("prosody", prosody);
             }
 
             json.addProperty("format", "pcm");

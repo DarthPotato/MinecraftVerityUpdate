@@ -127,3 +127,17 @@
 **Still open for Stage 1**
 - No owner playtest with working replies yet, so `playable-1.21.1` is not tagged. Voice, mic, config screen, karma bar, discs and flashlight are unverified on 1.21.1. Two clients on one server is untested.
 - Thinking on is reliable but slow; thinking off is fast but skipped tool calls in a small test. Owner's call.
+
+## Release (2026-11-13)
+
+**Owner playtest (1.21.1)**
+- The owner played 1.21.1 earlier (chat and Ollama replies work). This branch also gets the fish.audio speed setting and
+  Verity's voice as the default fish.audio voice, matching 26.3. No Host Mode here (26.3 only, as planned).
+
+**Packaging**
+- Jar names now carry the Minecraft version (`verity-6.0.0-beta.9-neoforge-<mc>.jar`); the version shown in game stays
+  6.0.0-beta.9.
+- Release bundle: the Verity jar, GeckoLib, YACL and `INSTALL.txt` (which jar goes on the server and which in each
+  player's game), zipped. Attached to a private GitHub release; `dist/` keeps a local copy (not in git).
+- `README.md` added.
+- Branches: `neoforge-26.3` (default) and `neoforge-1.21.1`. The old `master` and `stage2-26.3` names are gone.
