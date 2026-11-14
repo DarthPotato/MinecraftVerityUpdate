@@ -409,4 +409,7 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
 - Context size: Ollama ran at 8K with ~5,600-token prompts and up to 3,072 tokens of thinking and reply, and one reply
   hit the limit (`truncated = 1` in Ollama's log, a "..." in chat). 6.0.0 reserves 1,536 tokens for a thinking reply
   while allowing 3,072; the port now reserves the full budget plus slack, which gives 12K here.
+- Open (owner, for later): when the player carrying Verity logs off, Verity goes offline with them, because he is an
+  item in their inventory (saved with their player data, returned when they rejoin; same in 6.0.0). Options: on logout,
+  put him back into the world where they stood, or move him to the nearest online player.
 
