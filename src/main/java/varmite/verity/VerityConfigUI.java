@@ -130,6 +130,21 @@ public class VerityConfigUI {
                      .build()
                )
                .option(
+                  Option.<Boolean>createBuilder()
+                     .name(Component.literal("Host Mode"))
+                     .description(
+                        OptionDescription.of(
+                           Component.literal(
+                              "When this game hosts the world (LAN or server), Verity's voice is made here once and streamed to\n"
+                                 + "nearby players, so everyone hears the same voice. Their own voice settings are not used."
+                           )
+                        )
+                     )
+                     .binding(false, VerityConfig.HOST_MODE, VerityConfig.HOST_MODE::set)
+                     .controller(TickBoxControllerBuilder::create)
+                     .build()
+               )
+               .option(
                   Option.<TTSProvider>createBuilder()
                      .name(Component.literal("Text To Speech Provider"))
                      .description(OptionDescription.of(Component.literal("Provider to use for Text To Speech")))
@@ -165,7 +180,7 @@ public class VerityConfigUI {
                   Option.<String>createBuilder()
                      .name(Component.literal("fish.audio Voice ID"))
                      .description(
-                        OptionDescription.of(Component.literal("The voice model ID from fish.audio (FISH_AUDIO provider).\nEmpty uses the default voice."))
+                        OptionDescription.of(Component.literal("The voice model ID from fish.audio (FISH_AUDIO provider).\nEmpty uses Verity's voice."))
                      )
                      .binding("", VerityConfig.FISH_VOICE_ID, VerityConfig.FISH_VOICE_ID::set)
                      .controller(StringControllerBuilder::create)

@@ -44,6 +44,7 @@ public class VerityConfig {
    public static final ConfigValue<String> VERITY_CUSTOM_NAME;
    public static final ConfigValue<String> PERSONALITY;
    public static final BooleanValue USE_TTS;
+   public static final BooleanValue HOST_MODE;
 
    static {
       Builder builder = new Builder();
@@ -70,12 +71,19 @@ public class VerityConfig {
       builder.pop();
       builder.push("VoiceSettings");
       USE_TTS = builder.comment("Use the text to speech at all").define("useTTS", true);
+      HOST_MODE = builder.comment(
+            "Host Mode, for the game or server that hosts the world. Verity's voice is made here, once, with the voice",
+            "settings in this file, and streamed to the players near Verity. Everyone hears the same voice and API keys never",
+            "leave the host. Works with LOCAL, GROQ, KOKORO, CARTESIA and FISH_AUDIO. If the voice service fails, players",
+            "fall back to making the line with their own voice settings."
+         )
+         .define("hostMode", false);
       TTS_PROVIDER = builder.comment("Provider to use for Text To Speech").defineEnum("ttsProvider", TTSProvider.LOCAL);
       TTS_ENDPOINT = builder.comment("URL of the TTS server").define("ttsEndpoint", "");
       VOICE = builder.comment("Choose the voice Verity has (GROQ, Local)").define("voice", "Daniel");
       TTS_API_KEY = builder.comment("Your TTS API Key (Cartesia)").define("ttsApiKey", "");
       FISH_API_KEY = builder.comment("Your fish.audio API key (FISH_AUDIO provider)").define("fishApiKey", "");
-      FISH_VOICE_ID = builder.comment("fish.audio voice model ID (FISH_AUDIO provider). Empty uses the default voice.").define("fishVoiceId", "");
+      FISH_VOICE_ID = builder.comment("fish.audio voice model ID (FISH_AUDIO provider). Empty uses Verity's voice (711cf3ed00ab441a8f54a45058047b7a).").define("fishVoiceId", "");
       FISH_MODEL = builder.comment("fish.audio model (FISH_AUDIO provider): s2.1-pro-free (free tier), s2.1-pro, s2-pro, s1. Empty uses fish.audio's default.")
          .define("fishModel", "s2.1-pro-free");
       TTS_LANGUAGE = builder.comment("The language Verity speaks (Cartesia)").defineEnum("ttsLanguage", TTSLanguage.English);

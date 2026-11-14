@@ -10,6 +10,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.function.BooleanSupplier;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import javax.sound.sampled.AudioFormat;
@@ -61,6 +62,11 @@ public class LocalTTSBuilder {
    }
 
    public static byte[] generateSpeech(String text) {
+      return generateSpeech(text, () -> TTSHandler.cancelCurrentSpeech);
+   }
+
+   /** Same as above without touching client classes, for Host Mode on a server. */
+   public static byte[] generateSpeech(String text, BooleanSupplier cancelled) {
       if (ttsEngine == null) {
          System.out.println("[Verity Local TTS] Lazy loading offline AI engine...");
          init();
@@ -76,7 +82,7 @@ public class LocalTTSBuilder {
          genConfig.setSid(0);
          genConfig.setSpeed(1.0F);
          genConfig.setSilenceScale(0.2F);
-         GeneratedAudio audio = ttsEngine.generateWithConfigAndCallback(text, genConfig, samplesx -> TTSHandler.cancelCurrentSpeech ? 0 : 1);
+         GeneratedAudio audio = ttsEngine.generateWithConfigAndCallback(text, genConfig, samplesx -> cancelled.getAsBoolean() ? 0 : 1);
          if (audio != null && audio.getSamples() != null) {
             float[] samples = audio.getSamples();
             byte[] pcmData = new byte[samples.length * 2];

@@ -39,6 +39,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import varmite.verity.VerityConfig;
+import varmite.verity.voice.TtsRequests;
 import varmite.verity.entity.VerityState;
 import varmite.verity.entity.llm.builder.LocalTTSBuilder;
 import varmite.verity.entity.llm.builder.ModelExtractor;
@@ -117,6 +118,7 @@ public class TTSHandler {
 
    public static void interruptSpeech() {
       cancelCurrentSpeech = true;
+      SharedVoicePlayer.stopCurrent();
       Narrator.getNarrator().clear();
    }
 
@@ -329,25 +331,6 @@ public class TTSHandler {
       }
    }
 
-   private static Builder createAudioRequestBuilder() {
-      if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.FISH_AUDIO) {
-         return HttpRequest.newBuilder()
-            .uri(URI.create("https://api.fish.audio/v1/tts"))
-            .version(Version.HTTP_1_1)
-            .header("Authorization", "Bearer " + VerityConfig.FISH_API_KEY.get().trim())
-            .header("model", VerityConfig.FISH_MODEL.get().isBlank() ? "s2.1-pro" : VerityConfig.FISH_MODEL.get().trim());
-      } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.KOKORO) {
-         return HttpRequest.newBuilder().uri(URI.create(joinUrl(VerityConfig.TTS_ENDPOINT.get(), "audio/speech"))).version(Version.HTTP_1_1);
-      } else {
-         return VerityConfig.TTS_PROVIDER.get() == TTSProvider.GROQ
-            ? HttpRequest.newBuilder().uri(URI.create("https://api.groq.com/openai/v1/audio/speech")).header("Authorization", "Bearer " + getGroqApiKey())
-            : HttpRequest.newBuilder()
-               .uri(URI.create("https://api.cartesia.ai/tts/bytes"))
-               .header("Cartesia-Version", "2026-03-01")
-               .header("X-Api-Key", VerityConfig.TTS_API_KEY.get());
-      }
-   }
-
    public static void playLocalTTS(String text, Player player, VerityEntity verity) {
       if (VerityConfig.USE_TTS.get()) {
          CompletableFuture.runAsync(() -> {
@@ -411,67 +394,18 @@ public class TTSHandler {
       }
    }
 
-   /** fish.audio is asked for raw PCM (44.1 kHz, 16-bit, mono), which has no header to read the format from. */
-   private static AudioInputStream openAudioStream(InputStream rawStream) throws Exception {
-      BufferedInputStream buffered = new BufferedInputStream(rawStream);
-      if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.FISH_AUDIO) {
-         AudioFormat format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, 44100.0F, 16, 1, 2, 44100.0F, false);
-         return new AudioInputStream(buffered, format, AudioSystem.NOT_SPECIFIED);
-      } else {
-         return AudioSystem.getAudioInputStream(buffered);
-      }
-   }
-
    public static void playEndpointTTS(Player player, String text, VerityEntity verity) {
       cancelCurrentSpeech = false;
       resetMuffledFilter();
 
       try {
-         JsonObject json = new JsonObject();
-         if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.KOKORO) {
-            json.addProperty("model", VerityConfig.KOKORO_MODEL.get());
-            json.addProperty("input", text);
-            json.addProperty("voice", VerityConfig.ENDPOINT_VOICE.get());
-            json.addProperty("response_format", "wav");
-            json.addProperty("speed", 1.2);
-         } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.GROQ) {
-            json.addProperty("model", "canopylabs/orpheus-v1-english");
-            json.addProperty("input", text);
-            json.addProperty("voice", VerityConfig.VOICE.get().toLowerCase());
-            json.addProperty("response_format", "wav");
-            json.addProperty("speed", 1.2);
-         } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.CARTESIA) {
-            json.addProperty("model_id", "sonic-3.5");
-            json.addProperty("transcript", text);
-            json.addProperty("voice", VerityConfig.ENDPOINT_VOICE.get());
-            JsonObject output = new JsonObject();
-            output.addProperty("container", "wav");
-            output.addProperty("encoding", "pcm_s16le");
-            output.addProperty("sample_rate", 44100);
-            JsonObject genConf = new JsonObject();
-            genConf.addProperty("volume", 1);
-            genConf.addProperty("speed", 1);
-            json.add("output_format", output);
-            json.addProperty("locale", VerityConfig.TTS_LANGUAGE.get().getLangCode());
-            json.add("generation_config", genConf);
-         } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.FISH_AUDIO) {
-            json.addProperty("text", text);
-            String voiceId = VerityConfig.FISH_VOICE_ID.get().trim();
-            if (!voiceId.isEmpty()) {
-               json.addProperty("reference_id", voiceId);
-            }
-
-            json.addProperty("format", "pcm");
-            json.addProperty("sample_rate", 44100);
-         }
-
-         HttpRequest request = createAudioRequestBuilder().header("Content-Type", "application/json").POST(BodyPublishers.ofString(json.toString())).build();
+         HttpRequest request = TtsRequests.build(text);
          HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30L)).build();
          HttpResponse<InputStream> response = client.send(request, BodyHandlers.ofInputStream());
          if (response.statusCode() == 200) {
             try (
                InputStream rawStream = response.body();
-               AudioInputStream audioStream = openAudioStream(rawStream);
+               AudioInputStream audioStream = TtsRequests.openAudioStream(rawStream);
             ) {
                AudioFormat format = audioStream.getFormat();
                Info info = new Info(SourceDataLine.class, format);

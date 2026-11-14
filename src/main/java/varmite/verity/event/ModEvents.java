@@ -1,5 +1,6 @@
 package varmite.verity.event;
 
+import varmite.verity.voice.HostVoice;
 import java.net.URI;
 import net.minecraft.world.item.component.SwingAnimation;
 import varmite.verity.environment.items.StackData;
@@ -164,8 +165,7 @@ public class ModEvents {
                .execute(
                   () -> {
                      if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved()) {
-                        PacketDistributor.sendToPlayersTrackingEntityAndSelf(VerityState.verityEntity, new PlayTtsPayload(VerityState.verityEntity.getId(), answer)
-                           );
+                        HostVoice.say(VerityState.verityEntity, answer);
                      }
 
                      updateAndSyncKarma(serverLevel, -2.0F);
@@ -206,7 +206,7 @@ public class ModEvents {
             p.getInventory().add(new ItemStack(ModItems.VERITY_ITEM.get()));
             serverLevel.playSound((Player)null, p.blockPosition(), SoundEvents.GHAST_HURT, SoundSource.PLAYERS, 1.0F, 1.0F);
             p.sendSystemMessage(Component.literal("<Verity> Ayo chat why u lettin me despawn like that"));
-            PacketDistributor.sendToPlayersTrackingEntityAndSelf(p, new PlayTtsPayload(p.getId(), "Ayo chat why u lettin me despawn like that"));
+            HostVoice.say(p, "Ayo chat why u lettin me despawn like that");
          }
       }
    }
@@ -233,8 +233,7 @@ public class ModEvents {
                   newVerity.setOwnerUUID(player.getUUID());
                   player.level().addFreshEntity(newVerity);
                   VerityState.verityEntity = newVerity;
-                  PacketDistributor.sendToPlayersTrackingEntityAndSelf(VerityState.verityEntity, new PlayTtsPayload(VerityState.verityEntity.getId(), "AAAAAAAAHHH")
-                     );
+                  HostVoice.say(VerityState.verityEntity, "AAAAAAAAHHH");
                   player.level().playSound((Player)null, player.blockPosition(), SoundEvents.ENDER_DRAGON_FLAP, SoundSource.PLAYERS, 1.0F, 1.0F);
                   newVerity.setDeltaMovement(launchVelocity);
                   newVerity.needsSync = true;
@@ -275,7 +274,7 @@ public class ModEvents {
             level.playSound((Player)null, standIn.blockPosition(), SoundEvents.TOTEM_USE, SoundSource.NEUTRAL, 1.0F, 1.0F);
             VerityEntity verity = VerityState.verityEntity;
             if (verity != null && !verity.isRemoved()) {
-               PacketDistributor.sendToPlayersTrackingEntityAndSelf(verity, new PlayTtsPayload(verity.getId(), "The darkness... it's gone. Thank you."));
+               HostVoice.say(verity, "The darkness... it's gone. Thank you.");
                if (VerityConfig.IMMERSIVE_MODE.get()) {
                   return;
                }
@@ -342,8 +341,7 @@ public class ModEvents {
                updateAndSyncKarma(level, -1.0F);
                if (!VerityState.verityEntity.isRemoved()) {
                   VerityState.verityEntity.setVariant("serious_1");
-                  PacketDistributor.sendToPlayersTrackingEntityAndSelf(VerityState.verityEntity, new PlayTtsPayload(VerityState.verityEntity.getId(), "I'm alone... where did you go?")
-                     );
+                  HostVoice.say(VerityState.verityEntity, "I'm alone... where did you go?");
                   if (VerityConfig.IMMERSIVE_MODE.get()) {
                      return;
                   }

@@ -1,5 +1,6 @@
 package varmite.verity.entity.llm;
 
+import varmite.verity.voice.HostVoice;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -36,9 +37,9 @@ public class AiManager {
             return "ERROR: " + detail;
          }).thenAccept(answer -> server.execute(() -> {
             if (verity != null && !verity.isRemoved()) {
-               PacketDistributor.sendToPlayersTrackingEntityAndSelf(verity, new PlayTtsPayload(verity.getId(), answer));
+               HostVoice.say(verity, answer);
             } else if (Player != null) {
-               PacketDistributor.sendToPlayersTrackingEntityAndSelf(Player, new PlayTtsPayload(Player.getId(), answer));
+               HostVoice.say(Player, answer);
             }
 
             server.getPlayerList().broadcastSystemMessage(Component.literal("<" + VerityConfig.VERITY_CUSTOM_NAME.get() + "> " + answer), false);

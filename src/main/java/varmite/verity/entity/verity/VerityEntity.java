@@ -1,5 +1,6 @@
 package varmite.verity.entity.verity;
 
+import varmite.verity.voice.HostVoice;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -183,7 +184,7 @@ public class VerityEntity extends PathfinderMob {
                   Random random1 = new Random();
                   int i = random1.nextInt(3);
                   this.setVariant("hurt");
-                  PacketDistributor.sendToPlayersTrackingEntityAndSelf(this, new PlayTtsPayload(this.getId(), "Ouch"));
+                  HostVoice.say(this, "Ouch");
                   if (i == 0) {
                      this.playSound(ModSounds.IMPACT_0.get(), 1.0F, 1.0F);
                   } else if (i == 1) {
