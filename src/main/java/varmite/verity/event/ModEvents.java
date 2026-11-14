@@ -63,6 +63,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
 import varmite.verity.command.ChangeKarmaCommand;
+import varmite.verity.command.DevAskCommand;
 import varmite.verity.command.RecoverVerityCommand;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
@@ -107,6 +108,7 @@ public class ModEvents {
    public static void registerCommands(RegisterCommandsEvent event) {
       RecoverVerityCommand.register(event.getDispatcher());
       ChangeKarmaCommand.register(event.getDispatcher());
+      DevAskCommand.register(event.getDispatcher());
    }
 
    @SubscribeEvent
