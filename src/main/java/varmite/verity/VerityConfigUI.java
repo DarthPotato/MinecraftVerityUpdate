@@ -173,6 +173,15 @@ public class VerityConfigUI {
                      .build()
                )
                .option(
+                  Option.<String>createBuilder()
+                     .name(Component.literal("fish.audio Model"))
+                     .description(OptionDescription.of(Component.literal("s2.1-pro-free is the free tier.
+Paid: s2.1-pro, s2-pro, s1.")))
+                     .binding("s2.1-pro-free", VerityConfig.FISH_MODEL, VerityConfig.FISH_MODEL::set)
+                     .controller(StringControllerBuilder::create)
+                     .build()
+               )
+               .option(
                   Option.<TTSLanguage>createBuilder()
                      .name(Component.literal("TTS Language"))
                      .description(OptionDescription.of(Component.literal("The language Verity speaks (Cartesia)")))

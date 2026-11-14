@@ -335,7 +335,8 @@ public class TTSHandler {
          return HttpRequest.newBuilder()
             .uri(URI.create("https://api.fish.audio/v1/tts"))
             .version(Version.HTTP_1_1)
-            .header("Authorization", "Bearer " + VerityConfig.FISH_API_KEY.get().trim());
+            .header("Authorization", "Bearer " + VerityConfig.FISH_API_KEY.get().trim())
+            .header("model", VerityConfig.FISH_MODEL.get().isBlank() ? "s2.1-pro" : VerityConfig.FISH_MODEL.get().trim());
       } else if (VerityConfig.TTS_PROVIDER.get() == TTSProvider.KOKORO) {
          return HttpRequest.newBuilder().uri(URI.create(joinUrl(VerityConfig.TTS_ENDPOINT.get(), "audio/speech"))).version(Version.HTTP_1_1);
       } else {
