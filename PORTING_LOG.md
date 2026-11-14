@@ -233,7 +233,8 @@ Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerity
 **`build_house` action (new, not in 6.0.0)**
 - `HouseBuilder` (`entity/llm/actions`), tool `build_house` in `Tools`. Picks a small, medium or big village house in
   the style of the player's biome (plains, desert, savanna, snowy, taiga) and places it a few blocks ahead of the
-  player, door side facing them.
+  player, door side facing them. The doors are on different sides in different templates, so the rotation comes from
+  the template's street jigsaw (the block marking its door side), not from the player's direction alone.
 - Refuses instead of wrecking: ground sloping more than 4 blocks, water or lava, or any block entity (chest, furnace...)
   in the footprint. Grass and snow layers are cleared, dips under the foundation are filled with dirt, chest loot
   tables are stripped, no villagers spawn. 60-second cooldown.
@@ -258,8 +259,18 @@ Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerity
   loaded) with no errors; with `hostileEvent = DEMON` at day 5 the demon spawned, the "face goes blank" message arrived,
   and killing it gave "The darkness... it's gone." No Verity errors in either log.
 
+- Survival chase (player boxed in stone, Resistance V, demon provoked with `/damage ... by Dev`): it broke into the box
+  and attacked and grabbed the player; the player picked up the cobblestone it knocked loose. No errors.
+- Verity's three generated structures (ThatMob's base, the lookout, Twixxel's library) all place with `/place`.
+
+**Owner questions answered (2026-11-14)**
+- 6.0.0 has no house-building action of its own; `build_house` is new. What it has is the three structures above,
+  generated in plains, and the `get old base location` tool.
+- Talking to Verity while carried is built into 6.0.0-beta.9: chat goes through when the Verity item is anywhere in the
+  inventory or offhand. Unlike Verity JE Extra's version (which targets older Verity builds), replies go to everyone's
+  chat and the voice is not muffled. Not tried in game yet.
+
 **Not verified / TODO**
-- A survival chase with block breaking, the chase music and jumpscare on a PC with audio, and the demon in
-  multiplayer. The live server still runs the earlier jar and has `hostileEvent = OFF`.
-- The demon and `build_house` exist only on 26.3; 1.21.1 still has the Wither stand-in.
+- The chase music and jumpscare on a PC with audio, and the demon in multiplayer. The live server still runs the
+  earlier jar and has `hostileEvent = OFF`.
 - trueDarkness on 26.3 is still parked (`parked/truedarkness`).
