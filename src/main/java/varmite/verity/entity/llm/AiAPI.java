@@ -8,7 +8,9 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.AiServices;
+import dev.langchain4j.service.Result;
 import dev.langchain4j.service.tool.ToolErrorHandlerResult;
 import java.net.ConnectException;
 import java.net.URI;
@@ -63,6 +65,7 @@ public class AiAPI {
          + ")\\]\\s*",
       2
    );
+   private static final Pattern LEADING_TAG = Pattern.compile("^\\[([a-z0-9_ ]{1,24})\\]\\s*", Pattern.CASE_INSENSITIVE);
    private static final Pattern SOUND_TAG = Pattern.compile("\\[sound:\\s*([a-z0-9_.:/-]+)\\s*\\]", 2);
    private static final Pattern THINK_BLOCK = Pattern.compile("(?is)<think>.*?(</think>|$)");
    private static final Pattern ASSISTANT_FILLER = Pattern.compile(
@@ -201,7 +204,12 @@ public class AiAPI {
          DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
          String time = LocalDateTime.now().format(fmt);
          String finalPrompt = "[" + time + "] " + prompt;
-         String answer = assistant.chat(finalPrompt);
+         Result<String> result = assistant.chat(finalPrompt);
+         String answer = result.content();
+         if (answer == null || answer.isBlank()) {
+            answer = leakedReply(result);
+         }
+
          if (answer == null || answer.isBlank()) {
             answer = "...";
          }
@@ -256,6 +264,28 @@ public class AiAPI {
       }
    }
 
+   /**
+    * Port fix: after a tool call, qwen3.5 on Ollama sometimes puts its whole spoken reply in the thinking field and
+    * leaves the reply empty (6.0.0 then says "..."). A leaked reply starts with a [tag], as the prompt asks for a face
+    * tag first; real reasoning never does, so only that is used.
+    */
+   private static String leakedReply(Result<String> result) {
+      ChatResponse response = result.finalResponse();
+      String thinking = response == null || response.aiMessage() == null ? null : response.aiMessage().thinking();
+      if (thinking == null) {
+         return null;
+      }
+
+      String trimmed = thinking.trim();
+      Matcher tag = LEADING_TAG.matcher(trimmed);
+      if (trimmed.length() > 400 || !tag.lookingAt()) {
+         return null;
+      }
+
+      // A real face tag stays for processInlineTags; a made-up one ("[talking]") is dropped.
+      return EXPRESSION_TAG.matcher(trimmed).lookingAt() ? trimmed : trimmed.substring(tag.end());
+   }
+
    private static long pruneToolHistory(MinecraftChatMemoryStore store) {
       List<ChatMessage> messages = store.getMessages("verity-chat-memory");
       List<ChatMessage> kept = new ArrayList<>(messages.size());
@@ -268,6 +298,9 @@ public class AiAPI {
                   continue;
                }
 
+               message = AiMessage.from(ai.text());
+            } else if (message instanceof AiMessage ai && ai.thinking() != null && ai.text() != null) {
+               // Thinking is kept out of the saved history (it is never sent back to the model anyway).
                message = AiMessage.from(ai.text());
             }
 
@@ -410,6 +443,6 @@ public class AiAPI {
    }
 
    interface Assistant {
-      String chat(String message);
+      Result<String> chat(String message);
    }
 }
