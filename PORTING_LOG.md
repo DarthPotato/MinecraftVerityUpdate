@@ -160,3 +160,21 @@ Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerity
 **Not verified**
 - Anything with a player on 26.3: world join, rendering of Verity / the box / the item, HUD, chat, voice, mic, config screen.
 - Automatic client join (`-PjoinServer`) did not connect on 26.3; cause not investigated.
+
+### 2026-11-13 (evening): first 26.3 playtests
+
+**Verified with a player**
+- Dev client, singleplayer (owner): world join, box opens with the advancement, Verity renders correctly, chat reply from Ollama in 3 s, the teleport tool call works, the Verity item renders. The voice engine generates lines but the downstairs PC had no audio output device, so playback could not be tested there.
+- Owner's real 26.3 server (`C:\Minecraft\server`, NeoForge 26.3.0.103, with Distant Horizons, Xaero's Minimap, Bookshelf Inspector, Tree Timber): Verity and GeckoLib 5.5.7 load with no errors; the owner joined from their own game and Verity answered through the server's Ollama.
+
+**Fixed**
+- Config screen edits were never written to disk on NeoForge (Forge autosaved, NeoForge does not). `VerityConfigUI` now saves the spec, and so does the hostile-event code that bumps `dayCount`. Fixed on 1.21.1 too.
+- Colour preview and tint textures are created on first use (client setup crashed on 26.3).
+- Dev run: `showLoadWarnings = false`, so YACL's `logoFile` deprecation warning screen does not block the title screen.
+
+**Notes for the owner**
+- On 26.3 the Mods button is a small icon (NeoForge logo) on the title and pause screens, not a text button.
+- In singleplayer the AI request runs inside the player's own game, so a game on another PC needs `aiEndpoint = http://192.168.1.195:11434/v1`. On the server it uses the server's config.
+
+**Still open**
+- Config screen saving (fix untested), fish.audio, voice playback and the mic on a PC with audio, two players on the server, and 10 minutes with no errors.
