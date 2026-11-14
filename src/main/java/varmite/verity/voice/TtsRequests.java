@@ -61,6 +61,13 @@ public final class TtsRequests {
          json.addProperty("text", text);
          String voiceId = VerityConfig.FISH_VOICE_ID.get().trim();
          json.addProperty("reference_id", voiceId.isEmpty() ? VERITY_FISH_VOICE : voiceId);
+         double speed = VerityConfig.FISH_SPEED.get();
+         if (Math.abs(speed - 1.0) > 0.001) {
+            JsonObject prosody = new JsonObject();
+            prosody.addProperty("speed", speed);
+            json.add("prosody", prosody);
+         }
+
          json.addProperty("format", "pcm");
          json.addProperty("sample_rate", 44100);
       }

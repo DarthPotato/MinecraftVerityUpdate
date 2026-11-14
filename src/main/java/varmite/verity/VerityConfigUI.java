@@ -4,6 +4,7 @@ import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.Option;
 import dev.isxander.yacl3.api.OptionDescription;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
+import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerFieldControllerBuilder;
 import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
@@ -192,6 +193,14 @@ public class VerityConfigUI {
                      .description(OptionDescription.of(Component.literal("s2.1-pro-free is the free tier.\nPaid: s2.1-pro, s2-pro, s1.")))
                      .binding("s2.1-pro-free", VerityConfig.FISH_MODEL, VerityConfig.FISH_MODEL::set)
                      .controller(StringControllerBuilder::create)
+                     .build()
+               )
+               .option(
+                  Option.<Double>createBuilder()
+                     .name(Component.literal("fish.audio Speed"))
+                     .description(OptionDescription.of(Component.literal("How fast Verity talks with fish.audio. 1.00 is normal.")))
+                     .binding(1.0, VerityConfig.FISH_SPEED, VerityConfig.FISH_SPEED::set)
+                     .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.5, 2.0).step(0.05))
                      .build()
                )
                .option(

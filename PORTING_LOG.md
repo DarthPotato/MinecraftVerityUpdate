@@ -203,3 +203,21 @@ Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerity
 
 **Not verified**
 - Hearing it on a PC with speakers; two players at once.
+
+## Release (2026-11-13)
+
+**Owner playtest (26.3, real server, Host Mode)**
+- Owner joined the 26.3 server with the new jar: chat, actions, Verity's look and the item all work, and Host Mode
+  plays fish.audio's Verity voice to the player. The owner found the delivery a little slower and lower than the
+  "Smiley's Better Voice" add-on. Checked: fish.audio returns 44.1 kHz mono and that is what is played, so the speed is
+  right; the difference is the model's delivery. A `fishSpeed` setting (0.5 to 2.0, default 1.0) was added.
+- Tagged `playable-26.3` on the owner's sign-off. Not run through: two players at once, the mic on a PC with audio,
+  and a timed 10-minute error check.
+
+**Packaging**
+- Jar names now carry the Minecraft version (`verity-6.0.0-beta.9-neoforge-<mc>.jar`); the version shown in game stays
+  6.0.0-beta.9.
+- Release bundle: the Verity jar, GeckoLib, YACL and `INSTALL.txt` (which jar goes on the server and which in each
+  player's game), zipped. Attached to a private GitHub release; `dist/` keeps a local copy (not in git).
+- `README.md` added.
+- Branches: `neoforge-26.3` (default) and `neoforge-1.21.1`. The old `master` and `stage2-26.3` names are gone.
