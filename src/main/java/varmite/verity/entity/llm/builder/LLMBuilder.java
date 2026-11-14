@@ -74,6 +74,8 @@ public class LLMBuilder {
          ollama.baseUrl(serverRoot(this.endpoint));
          ollama.modelName(this.model);
          ollama.think(this.ollamaThink);
+         // Lets AiAPI recover a reply that the model put in its thinking by mistake.
+         ollama.returnThinking(true);
          if (this.contextSize > 0) {
             ollama.numCtx(this.contextSize);
          }
