@@ -273,3 +273,13 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
 - Talking to Verity while another player carries him: chat only goes through when Verity is out in the world or in
   the speaker's own inventory, so when Logan carried him the owner could not talk to him (6.0.0 works the same way).
 - Updated the owner's server to the 6.0.0 port jar at 12:43 (old jar kept in mods_old).
+- Owner: let players near the carrier talk to Verity too. Chat now goes through when the speaker is within 16 blocks
+  of a player who has Verity in their inventory (server-side change; clients with the earlier 6.0.0 port jar can
+  still join).
+- Owner turned the hostile event on: the live server's `hostileEvent` set to `DEMON` at 12:49 (the world was on day 6
+  with `dayCount = 5` and the event unused, so it fires the next time a player is near Verity's body).
+- The server started by the install script shows raw colour codes in its console window, because it was launched from
+  a background process; starting `run.bat` normally avoids that. Later installs only swap the jar and leave starting
+  the server to the owner.
+- Local AI Setup confirmations (as in 6.0.0): deleting a model and removing Ollama ask first; installing Ollama and
+  downloading a model start at once and can be cancelled.

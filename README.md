@@ -17,6 +17,8 @@ The `neoforge-26.3` branch has the 26.3 build. `PORTING_LOG.md` records every ch
   the original, minus the forced midnight) or `OFF` (which also turns off the day-based personality shift).
 - `canCrash` (kick a player the demon kills) defaults to off.
 - New action: Verity can build a vanilla village house in front of the player (`build_house`).
+- While someone carries Verity, players within 16 blocks of them can talk to him too (in 6.0.0 only the carrier
+  can).
 - AI: any OpenAI-compatible endpoint, key and model, instead of a fixed provider list. Ollama is detected and used
   natively.
 - Voice: fish.audio added (free model and Verity's voice by default, with a speed setting).
