@@ -83,5 +83,17 @@
         "stream": true
       }
     ]
+  },
+  "chase": {
+    "subtitle": "sounds.verity.chase",
+    "sounds": [
+      "verity:chase"
+    ]
+  },
+  "jumpscare": {
+    "category": "hostile",
+    "sounds": [
+      "verity:jumpscare"
+    ]
   }
 }

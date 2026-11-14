@@ -6,8 +6,6 @@ import com.mojang.blaze3d.vertex.PoseStack.Pose;
 import java.util.Map;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRendererProvider.Context;
-import org.joml.Matrix3f;
-import org.joml.Matrix4f;
 import software.bernie.geckolib.cache.object.GeoBone;
 import software.bernie.geckolib.renderer.GeoEntityRenderer;
 import varmite.verity.client.render.BedrockPolyMesh;
@@ -30,24 +28,21 @@ public class VerityDemonRenderer extends GeoEntityRenderer<VerityDemonEntity> {
 
    @Override
    public void renderCubesOfBone(
-      PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, float red, float green, float blue, float alpha
+      PoseStack poseStack, GeoBone bone, VertexConsumer buffer, int packedLight, int packedOverlay, int colour
    ) {
-      super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, red, green, blue, alpha);
+      super.renderCubesOfBone(poseStack, bone, buffer, packedLight, packedOverlay, colour);
       Map<String, float[]> meshes = BedrockPolyMesh.forModel(VerityDemonModel.MESH);
       float[] vertices = meshes.get(bone.getName());
       if (vertices != null) {
          Pose pose = poseStack.last();
-         Matrix4f position = pose.pose();
-         Matrix3f normal = pose.normal();
 
-         for (int i = 0; i < vertices.length; i += 8) {
-            buffer.vertex(position, vertices[i], vertices[i + 1], vertices[i + 2])
-               .color(red, green, blue, alpha)
-               .uv(vertices[i + 3], vertices[i + 4])
-               .overlayCoords(packedOverlay)
-               .uv2(packedLight)
-               .normal(normal, vertices[i + 5], vertices[i + 6], vertices[i + 7])
-               .endVertex();
+         for (int i = 0; i < vertices.length; i += BedrockPolyMesh.STRIDE) {
+            buffer.addVertex(pose, vertices[i], vertices[i + 1], vertices[i + 2])
+               .setColor(colour)
+               .setUv(vertices[i + 3], vertices[i + 4])
+               .setOverlay(packedOverlay)
+               .setLight(packedLight)
+               .setNormal(pose, vertices[i + 5], vertices[i + 6], vertices[i + 7]);
          }
       }
    }

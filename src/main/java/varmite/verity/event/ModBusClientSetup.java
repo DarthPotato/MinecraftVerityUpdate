@@ -19,6 +19,7 @@ import varmite.verity.client.gui.KarmaHudOverlay;
 import net.neoforged.neoforge.client.extensions.common.IClientItemExtensions;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
 import varmite.verity.entity.ModEntities;
+import varmite.verity.entity.demon.rendering.VerityDemonRenderer;
 import varmite.verity.environment.items.ModItems;
 import varmite.verity.environment.items.client.VerityItemRenderer;
 import varmite.verity.entity.utils.SphereEntityRenderer;
@@ -32,6 +33,7 @@ public class ModBusClientSetup {
    public static void registerRenderers(RegisterRenderers event) {
       event.registerEntityRenderer(ModEntities.VERITY_ENTITY.get(), SphereEntityRenderer::new);
       event.registerEntityRenderer(ModEntities.BOX_ENTITY.get(), BoxRenderer::new);
+      event.registerEntityRenderer(ModEntities.VERITY_DEMON_ENTITY.get(), VerityDemonRenderer::new);
    }
 
    @SubscribeEvent

@@ -424,6 +424,11 @@ public class Tools {
       });
    }
 
+   @Tool("Build a house next to the player. Only use this when the player asks you to build a house, home or shelter.")
+   String build_house() {
+      return this.serverCall(() -> this.player == null ? "No player found." : HouseBuilder.build(this.player));
+   }
+
    @Tool("Get the player's name")
    String get_player_name() {
       return this.serverCall(() -> this.player == null ? "No player found." : this.player.getName().getString());

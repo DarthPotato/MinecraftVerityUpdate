@@ -2,8 +2,8 @@ package varmite.verity.entity.demon.rendering;
 
 import net.minecraft.resources.ResourceLocation;
 import software.bernie.geckolib.constant.DataTickets;
-import software.bernie.geckolib.core.animatable.model.CoreGeoBone;
-import software.bernie.geckolib.core.animation.AnimationState;
+import software.bernie.geckolib.cache.object.GeoBone;
+import software.bernie.geckolib.animation.AnimationState;
 import software.bernie.geckolib.model.GeoModel;
 import software.bernie.geckolib.model.data.EntityModelData;
 import varmite.verity.entity.demon.VerityDemonEntity;
@@ -26,7 +26,7 @@ public class VerityDemonModel extends GeoModel<VerityDemonEntity> {
 
    public void setCustomAnimations(VerityDemonEntity animatable, long instanceId, AnimationState<VerityDemonEntity> animationState) {
       super.setCustomAnimations(animatable, instanceId, animationState);
-      CoreGeoBone head = this.getAnimationProcessor().getBone("Head");
+      GeoBone head = this.getAnimationProcessor().getBone("Head");
       if (head != null) {
          EntityModelData entityData = animationState.getData(DataTickets.ENTITY_MODEL_DATA);
          if (entityData != null) {

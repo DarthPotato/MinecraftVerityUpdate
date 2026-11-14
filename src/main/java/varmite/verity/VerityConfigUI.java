@@ -109,12 +109,20 @@ public class VerityConfigUI {
                                  + "OFF: nothing, and no personality shift.\n"
                                  + "MESSAGE: a chat message stands in for it.\n"
                                  + "WITHER: a Wither spawns near you (it destroys blocks).\n"
-                                 + "DEMON: not in this build yet, behaves like WITHER."
+                                 + "DEMON: Verity's demon form hunts you and breaks any block in its way."
                            )
                         )
                      )
                      .binding(HostileEvent.MESSAGE, VerityConfig.HOSTILE_EVENT, VerityConfig.HOSTILE_EVENT::set)
                      .controller(opt -> EnumControllerBuilder.create(opt).enumClass(HostileEvent.class))
+                     .build()
+               )
+               .option(
+                  Option.<Boolean>createBuilder()
+                     .name(Component.literal("Can Crash"))
+                     .description(OptionDescription.of(Component.literal("Kick a player from the server when Verity's demon kills them. Off by default.")))
+                     .binding(false, VerityConfig.CAN_CRASH, VerityConfig.CAN_CRASH::set)
+                     .controller(TickBoxControllerBuilder::create)
                      .build()
                )
                .build()

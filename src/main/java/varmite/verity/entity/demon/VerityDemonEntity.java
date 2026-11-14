@@ -46,19 +46,19 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
-import net.minecraft.world.level.pathfinder.BlockPathTypes;
+import net.minecraft.world.level.pathfinder.PathType;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import software.bernie.geckolib.animatable.GeoEntity;
-import software.bernie.geckolib.core.animatable.instance.AnimatableInstanceCache;
-import software.bernie.geckolib.core.animation.AnimationController;
-import software.bernie.geckolib.core.animation.AnimationState;
-import software.bernie.geckolib.core.animation.RawAnimation;
-import software.bernie.geckolib.core.animation.AnimatableManager.ControllerRegistrar;
-import software.bernie.geckolib.core.animation.Animation.LoopType;
-import software.bernie.geckolib.core.object.PlayState;
+import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
+import software.bernie.geckolib.animation.AnimationController;
+import software.bernie.geckolib.animation.AnimationState;
+import software.bernie.geckolib.animation.RawAnimation;
+import software.bernie.geckolib.animation.AnimatableManager.ControllerRegistrar;
+import software.bernie.geckolib.animation.Animation.LoopType;
+import software.bernie.geckolib.animation.PlayState;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import varmite.verity.client.sound.ClientSoundHandler;
 import varmite.verity.entity.demon.goals.DemonAttackGoal;
@@ -129,9 +129,8 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
 
    public VerityDemonEntity(EntityType<? extends PathfinderMob> entityType, Level level) {
       super(entityType, level);
-      this.setMaxUpStep(1.5F);
-      this.setPathfindingMalus(BlockPathTypes.WATER, 0.0F);
-      this.setPathfindingMalus(BlockPathTypes.WATER_BORDER, 0.0F);
+      this.setPathfindingMalus(PathType.WATER, 0.0F);
+      this.setPathfindingMalus(PathType.WATER_BORDER, 0.0F);
       this.setPersistenceRequired();
    }
 
@@ -141,16 +140,16 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    }
 
    @Override
-   protected void defineSynchedData() {
-      super.defineSynchedData();
-      this.entityData.define(DEMON_STATE, 0);
-      this.entityData.define(IS_CLIMBING, false);
-      this.entityData.define(IS_CRAWLING, false);
-      this.entityData.define(HUNT_PHASE, 0);
-      this.entityData.define(IS_EATING, false);
-      this.entityData.define(IS_GRABBING, false);
-      this.entityData.define(GRABBED_ENTITY_ID, 0);
-      this.entityData.define(IS_STALKING_WINDOW, false);
+   protected void defineSynchedData(SynchedEntityData.Builder builder) {
+      super.defineSynchedData(builder);
+      builder.define(DEMON_STATE, 0);
+      builder.define(IS_CLIMBING, false);
+      builder.define(IS_CRAWLING, false);
+      builder.define(HUNT_PHASE, 0);
+      builder.define(IS_EATING, false);
+      builder.define(IS_GRABBING, false);
+      builder.define(GRABBED_ENTITY_ID, 0);
+      builder.define(IS_STALKING_WINDOW, false);
    }
 
    @Override
@@ -282,7 +281,8 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
          .add(Attributes.FOLLOW_RANGE, 512.0)
          .add(Attributes.ATTACK_DAMAGE, 19.0)
          .add(Attributes.ATTACK_KNOCKBACK, 1.0)
-         .add(Attributes.KNOCKBACK_RESISTANCE, 1.0);
+         .add(Attributes.KNOCKBACK_RESISTANCE, 1.0)
+         .add(Attributes.STEP_HEIGHT, 1.5);
    }
 
    @Override
@@ -628,7 +628,7 @@ public class VerityDemonEntity extends PathfinderMob implements GeoEntity, Enemy
    }
 
    @Override
-   public EntityDimensions getDimensions(Pose pose) {
+   protected EntityDimensions getDefaultDimensions(Pose pose) {
       return EntityDimensions.fixed(0.4F, this.entityData.get(IS_CRAWLING) ? 1.8F : 4.8F);
    }
 

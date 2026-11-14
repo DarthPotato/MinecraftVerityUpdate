@@ -6,7 +6,7 @@ import varmite.verity.entity.VerityState;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.types.HostileEvent;
 
-/** Shared state checks for the hostile event that replaces the parked demon. It runs once per world. */
+/** Shared state checks for the hostile event (a message, a Wither, or Verity's demon form). It runs once per world. */
 public class HostileEvents {
    public static boolean enabled() {
       return VerityConfig.HOSTILE_EVENT.get() != HostileEvent.OFF;

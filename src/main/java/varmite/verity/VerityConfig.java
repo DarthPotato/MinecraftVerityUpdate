@@ -28,6 +28,7 @@ public class VerityConfig {
    public static final ConfigValue<String> AI_MODEL;
    public static final ConfigValue<String> AI_ENDPOINT;
    public static final EnumValue<HostileEvent> HOSTILE_EVENT;
+   public static final BooleanValue CAN_CRASH;
    public static final EnumValue<TTSProvider> TTS_PROVIDER;
    public static final ConfigValue<String> TTS_ENDPOINT;
    public static final ConfigValue<String> TTS_API_KEY;
@@ -56,9 +57,11 @@ public class VerityConfig {
             "OFF: nothing, and the day-based personality shift is off too.",
             "MESSAGE: a chat message stands in for the event, then Verity is back to normal.",
             "WITHER: a Wither spawns near the player (it destroys blocks). Verity is back to normal once it is gone.",
-            "DEMON: reserved for Verity's demon form, which is not in this build. Behaves like WITHER."
+            "DEMON: Verity's demon form hunts the player and breaks any block in its way. Verity is back to normal once it is gone."
          )
          .defineEnum("hostileEvent", HostileEvent.MESSAGE);
+      CAN_CRASH = builder.comment("Kick a player from the server when Verity's demon kills them, as in the original. Off by default.")
+         .define("canCrash", false);
       REQUIRE_VERITY = builder.comment("Require 'Verity' in every sentence to speak to him.").define("requireVerity", false);
       TRUE_DARKNESS = builder.comment("The extreme darkness toggle").define("trueDarkness", false);
       VERITY_FOG = builder.comment("Thicker, darker fog in the overworld.").define("verityFog", false);
