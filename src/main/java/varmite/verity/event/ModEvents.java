@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -43,6 +45,7 @@ import net.minecraft.world.level.levelgen.Heightmap.Types;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.ServerChatEvent;
+import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
 import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
@@ -51,7 +54,9 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
 import net.neoforged.neoforge.event.entity.player.CanPlayerSleepEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerLoggedOutEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerRespawnEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClickBlock;
@@ -63,10 +68,13 @@ import varmite.verity.VerityConfig;
 import varmite.verity.command.ChangeKarmaCommand;
 import varmite.verity.command.DevAskCommand;
 import varmite.verity.command.RecoverVerityCommand;
+import varmite.verity.command.VerityFaceCommand;
 import varmite.verity.entity.ModEntities;
 import varmite.verity.entity.VerityState;
+import varmite.verity.entity.llm.AiAPI;
 import varmite.verity.entity.llm.AiManager;
 import varmite.verity.entity.demon.VerityDemonEntity;
+import varmite.verity.entity.llm.store.memory.VerityMemoryManager;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.entity.veritybox.BoxEntity;
 import varmite.verity.environment.items.ModItems;
@@ -77,6 +85,7 @@ import varmite.verity.network.PlayTtsPayload;
 
 @EventBusSubscriber(modid = "verity")
 public class ModEvents {
+   private static int lastSyncedKarma = Integer.MIN_VALUE;
    private static final List<ModEvents.ScheduledTask> PENDING_TASKS = Collections.synchronizedList(new ArrayList<>());
    private static final List<ModEvents.ScheduledTask> ACTIVE_TASKS = new ArrayList<>();
 
@@ -85,10 +94,7 @@ public class ModEvents {
       data.verityKarma += amount;
       data.verityKarma = Mth.clamp(data.verityKarma, 0.0F, 20.0F);
       data.setDirty();
-
-      for (ServerPlayer player : level.players()) {
-         ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)data.verityKarma), player);
-      }
+      syncKarma(level.getServer());
    }
 
    public static void setAndSyncKarma(ServerLevel level, float amount) {
@@ -97,10 +103,40 @@ public class ModEvents {
       data.verityKarma = amount;
       data.verityKarma = Mth.clamp(data.verityKarma, 0.0F, 20.0F);
       data.setDirty();
+      syncKarma(level.getServer());
+   }
 
-      for (ServerPlayer player : level.players()) {
-         ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)data.verityKarma), player);
+   public static void syncKarma(MinecraftServer server) {
+      int karma = (int)WorldSpawnData.get(server.overworld()).verityKarma;
+      lastSyncedKarma = karma;
+
+      for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+         ModMessages.sendToPlayer(new KarmaSyncS2CPacket(karma), player);
       }
+   }
+
+   private static void syncKarma(ServerPlayer player) {
+      ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)WorldSpawnData.get(player.serverLevel()).verityKarma), player);
+   }
+
+   @SubscribeEvent
+   public static void onPlayerChangedDimension(PlayerChangedDimensionEvent event) {
+      if (event.getEntity() instanceof ServerPlayer player) {
+         syncKarma(player);
+      }
+   }
+
+   @SubscribeEvent
+   public static void onPlayerRespawnSyncKarma(PlayerRespawnEvent event) {
+      if (event.getEntity() instanceof ServerPlayer player) {
+         syncKarma(player);
+      }
+   }
+
+   /** 6.0.0 warms the AI model up at mod setup; on a server setup that would load models on every player's PC, so it waits for the server. */
+   @SubscribeEvent
+   public static void onServerStarted(ServerStartedEvent event) {
+      AiAPI.warmUpOllamaAsync();
    }
 
    @SubscribeEvent
@@ -108,6 +144,7 @@ public class ModEvents {
       RecoverVerityCommand.register(event.getDispatcher());
       ChangeKarmaCommand.register(event.getDispatcher());
       DevAskCommand.register(event.getDispatcher());
+      VerityFaceCommand.register(event.getDispatcher());
    }
 
    @SubscribeEvent
@@ -142,6 +179,69 @@ public class ModEvents {
 
             ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)data.verityKarma), player);
          }, 20);
+      }
+   }
+
+   @SubscribeEvent
+   public static void onPlayerLoggedOut(PlayerLoggedOutEvent event) {
+      if (event.getEntity() instanceof ServerPlayer player) {
+         VerityMemoryManager.get().addMemory("last_logout_" + player.getStringUUID(), String.valueOf(System.currentTimeMillis()));
+      }
+   }
+
+   @SubscribeEvent
+   public static void onPlayerReturn(PlayerLoggedInEvent event) {
+      if (event.getEntity() instanceof ServerPlayer player) {
+         CompletableFuture.runAsync(
+            () -> {
+               MinecraftServer server = player.getServer();
+               if (server != null) {
+                  server.execute(
+                     () -> {
+                        if (player.isAlive() && !player.hasDisconnected()) {
+                           boolean isSpawned = VerityState.hasSpawned && VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved();
+                           boolean isInInventory = hasVerityInInventory(player);
+                           if (isSpawned || isInInventory) {
+                              String storedTime = VerityMemoryManager.get().getMemory("last_logout_" + player.getStringUUID());
+                              String timeAway = "a while";
+                              if (storedTime != null) {
+                                 try {
+                                    long logoutTimestamp = Long.parseLong(storedTime);
+                                    long awayMs = System.currentTimeMillis() - logoutTimestamp;
+                                    long minutes = awayMs / 60000L;
+                                    long hours = minutes / 60L;
+                                    long days = hours / 24L;
+                                    if (days > 0L) {
+                                       timeAway = days + " day" + (days > 1L ? "s" : "");
+                                    } else if (hours > 0L) {
+                                       timeAway = hours + " hour" + (hours > 1L ? "s" : "");
+                                    } else if (minutes > 1L) {
+                                       timeAway = minutes + " minutes";
+                                    } else {
+                                       timeAway = "a few moments";
+                                    }
+                                 } catch (Exception var15) {
+                                 }
+                              }
+
+                              if (isSpawned) {
+                                 VerityState.verityEntity.startTalking(80);
+                              }
+
+                              String triggerPrompt = "<System> "
+                                 + player.getName().getString()
+                                 + " just loaded back into the world after being gone for "
+                                 + timeAway
+                                 + ". Say something in character reacting to their return, like complaining they took so long, being relieved, or asking where they were.";
+                              AiManager.queryAI(isSpawned ? VerityState.verityEntity : null, triggerPrompt, player);
+                           }
+                        }
+                     }
+                  );
+               }
+            },
+            CompletableFuture.delayedExecutor(4L, TimeUnit.SECONDS)
+         );
       }
    }
 
@@ -349,6 +449,14 @@ public class ModEvents {
          }
       }
 
+      MinecraftServer tickServer = event.getServer();
+      if (tickServer != null && tickServer.getTickCount() % 20 == 0) {
+         int karma = (int)WorldSpawnData.get(tickServer.overworld()).verityKarma;
+         if (karma != lastSyncedKarma) {
+            syncKarma(tickServer);
+         }
+      }
+
       if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved() && !VerityState.verityEntity.level().isClientSide()) {
          if (VerityState.lonelinessTimer > 0) {
             VerityState.lonelinessTimer--;
@@ -553,7 +661,7 @@ public class ModEvents {
          if (level.dimension() == Level.OVERWORLD) {
             WorldSpawnData data = WorldSpawnData.get(level);
             if (!data.hasSpawnedEntity) {
-               data.verityKarma = 10.0F;
+               setAndSyncKarma(level, 10.0F);
                player.sendSystemMessage(Component.literal("Need help setting up this mod? Watch this tutorial."));
                Component message = Component.literal("Setup Tutorial")
                   .withStyle(ChatFormatting.AQUA)

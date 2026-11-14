@@ -89,10 +89,10 @@ public class VerityConfig {
       KOKORO_MODEL = builder.comment("Model for Kokoro").define("kokoroModel", "");
       builder.pop();
       builder.push("SpeechSettings");
-      STT_PROVIDER = builder.comment("Provider to use for Text To Speech").defineEnum("sttProvider", STTProvider.NATIVE);
+      STT_PROVIDER = builder.comment("Provider to use for Speech To Text").defineEnum("sttProvider", STTProvider.NATIVE);
       GROQ_KEY = builder.comment("API Key for GROQ.").define("groqKey", "");
       STT_ENDPOINT = builder.comment("Custom endpoint for STT").define("sttEndpoint", "");
-      STT_MODEL = builder.comment("Custom endpoint for STT").define("sttModel", "");
+      STT_MODEL = builder.comment("Custom model for STT").define("sttModel", "");
       builder.pop();
       builder.push("Custom");
       COLOR = builder.comment("The Hue of Verity's texture color (0 to 360 degrees).").defineInRange("colorHue", 0, 0, 360);

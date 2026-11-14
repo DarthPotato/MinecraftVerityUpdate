@@ -2,6 +2,10 @@ package varmite.verity.entity.utils;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -12,6 +16,8 @@ import org.joml.Matrix4f;
 public final class SphereMesh {
    private static final float TEXTURE_SCALE = 1.3F;
    private static final float TEXTURE_SQUISH_Y = 0.9F;
+   private static final String FACE_DIR = "textures/entity/";
+   private static final Map<ResourceLocation, Optional<ResourceLocation>> TEETH_OVERLAYS = new ConcurrentHashMap<>();
 
    private SphereMesh() {
    }
@@ -32,6 +38,25 @@ public final class SphereMesh {
       VertexConsumer consumer = bufferSource.getBuffer(RenderType.entityCutoutNoCull(texture));
       PoseStack.Pose last = poseStack.last();
       drawSphere(last.pose(), last, consumer, radius, latitudes, longitudes, packedLight, r, g, b, a);
+      teethOverlay(texture)
+         .ifPresent(
+            overlay -> drawSphere(
+               last.pose(), last, bufferSource.getBuffer(RenderType.entityTranslucent(overlay)), radius * 1.002F, latitudes, longitudes, packedLight, 255, 255, 255, a
+            )
+         );
+   }
+
+   /** 6.0.0: some faces have a teeth layer in textures/entity/teeth/, drawn untinted just above the face. */
+   private static Optional<ResourceLocation> teethOverlay(ResourceLocation texture) {
+      return TEETH_OVERLAYS.computeIfAbsent(texture, tex -> {
+         String path = tex.getPath();
+         if (!path.startsWith(FACE_DIR)) {
+            return Optional.empty();
+         }
+
+         ResourceLocation overlay = ResourceLocation.fromNamespaceAndPath(tex.getNamespace(), FACE_DIR + "teeth/" + path.substring(FACE_DIR.length()));
+         return Minecraft.getInstance().getResourceManager().getResource(overlay).map(resource -> overlay);
+      });
    }
 
    private static void drawSphere(

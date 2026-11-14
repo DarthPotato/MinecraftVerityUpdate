@@ -186,6 +186,12 @@ public class TTSHandler {
                }
 
                var26.write((twoHyphens + var23 + var28).getBytes(StandardCharsets.UTF_8));
+               var26.write(("Content-Disposition: form-data; name=\"prompt\"" + var28 + var28).getBytes(StandardCharsets.UTF_8));
+               var26.write(("Verity, Minecraft, player, entity, helper, companion" + var28).getBytes(StandardCharsets.UTF_8));
+               var26.write((twoHyphens + var23 + var28).getBytes(StandardCharsets.UTF_8));
+               var26.write(("Content-Disposition: form-data; name=\"temperature\"" + var28 + var28).getBytes(StandardCharsets.UTF_8));
+               var26.write(("0.0" + var28).getBytes(StandardCharsets.UTF_8));
+               var26.write((twoHyphens + var23 + var28).getBytes(StandardCharsets.UTF_8));
                if (VerityConfig.STT_PROVIDER.get() == STTProvider.WHISPER) {
                   var26.write(("Content-Disposition: form-data; name=\"file\"; filename=\"audio.wav\"" + var28).getBytes(StandardCharsets.UTF_8));
                   var26.write(("Content-Type: audio/wav" + var28 + var28).getBytes(StandardCharsets.UTF_8));
@@ -222,7 +228,7 @@ public class TTSHandler {
                if (response.statusCode() == 200) {
                   JsonObject responseJson = JsonParser.parseString(response.body()).getAsJsonObject();
                   String transcribedText = responseJson.get("text").getAsString().trim();
-                  return !".".equals(transcribedText) && !transcribedText.isEmpty() ? transcribedText : "";
+                  return !".".equals(transcribedText) && !transcribedText.isEmpty() ? sanitizeTranscript(transcribedText) : "";
                } else {
                   System.err.println("[Verity STT Error]: " + response.statusCode() + " - " + response.body());
                   return "";
@@ -252,13 +258,26 @@ public class TTSHandler {
                sherpaRecognizer.decode(stream);
                String result = sherpaRecognizer.getResult(stream).getText();
                stream.release();
-               return result != null ? result.trim() : "";
+               return result != null ? sanitizeTranscript(result.trim()) : "";
             } catch (Exception e) {
                System.err.println("[Verity STT] Failed to process speech locally with Sherpa.");
                e.printStackTrace();
                return "";
             }
          }
+      } else {
+         return "";
+      }
+   }
+
+   public static String sanitizeTranscript(String raw) {
+      if (raw != null && !raw.isBlank()) {
+         String posCleaned = raw.replaceAll("(?i)\\b(verdi's|verdy's|verde's|variety's|verify's|varity's)\\b", "Verity's");
+         String cleaned = posCleaned.replaceAll(
+            "(?i)\\b(verdi|verdy|verde|verdie|virdi|veriti|veritiy|veritee|veritie|varity|variety|verify|ferity|parity|birdie|very\\s*tea|where\\s*are\\s*tea)\\b",
+            "Verity"
+         );
+         return cleaned.trim();
       } else {
          return "";
       }
