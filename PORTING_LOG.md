@@ -338,3 +338,45 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
 **Not verified**
 - The welcome-back greeting and the abandonment tracker in real play, two players at once, voice on a PC with audio,
   the mic.
+
+## Owner answers and follow-ups (2026-11-14, afternoon)
+
+**Owner decisions**
+- Keep the music discs and the song tools (6.0.0 removed them).
+- Include the one-click Ollama installer "just in case".
+- Bring back four lookups 6.0.0 dropped: full inventory, nearby non-hostile creatures, Verity's own coordinates,
+  ThatMob's old base.
+- Jar names: `verity-6.0.0-neoforge-<mc>-port.jar`.
+
+**Local AI Setup (6.0.0's installer), both branches**
+- Ported onto the free-form endpoint: "Use" sets the model (and points a cloud endpoint at the Ollama on this PC);
+  whether the endpoint is Ollama is guessed from the URL (local or port 11434) because the screen asks every frame.
+- An Ollama installed on this PC that is not running is started when Verity needs it (only for endpoints on this PC).
+- 1.21.1: the base screen render draws the background (calling it again crashes in 1.21), new list constructor,
+  LayeredDraw HUD layer. 26.3: the 26.1+ GUI API (extractRenderState/extractContent, GuiGraphicsExtractor,
+  gui.setScreen, GuiLayer, KeyEvent), and text colours need an alpha byte.
+- Dev-only `DevScreenHook`: with `VERITY_DEV_OPEN_LOCAL_AI` set, a dev client opens Local AI Setup instead of the
+  title screen. Inert in a built jar.
+- Verified: both clients start cleanly; the screen draws on both, lists the installed models and marks qwen3.5:9b as
+  in use; the 26.3 server boots cleanly. Not verified: installing Ollama or downloading a model with it.
+
+**Restored lookups**
+- `get_player_inventory`, `get_nearby_entities` (counted by name, Verity excluded), `get_own_coords` (or "in the
+  player's inventory"), `get_old_base_location`. The beta.9 code with clearer descriptions; 26 tools in total.
+  Not tried with the AI yet (the owner was playing on the same Ollama).
+
+**Thinking mode test (26.3 dev, qwen3.5:9b, five tool requests each way)**
+- On: 3 to 17 s per reply, the right tool every time. Off: the model answers faster, but it skipped tools: it said it
+  gave two apples without calling give_item and wrote "Blast_monsters!" instead of calling blast_monsters. Kept on,
+  as 6.0.0's own setting note recommends for qwen3/3.5.
+- The off run was also slowed by model reloads: the owner's live server (old jar, 32K context) and the dev server (8K)
+  shared one Ollama, so Ollama reloaded the model between them. Do not test against the shared Ollama while the owner
+  plays.
+
+**Live server, two players (old 19:42 Host Mode jar)**
+- One shared Verity: one conversation for everyone, messages tagged with the speaker. When both talk at once she
+  mixes up who asked what. Same design in 6.0.0.
+- The owner's lines are speech-to-text, so the mic and STT work in multiplayer.
+- "No answer provided" replies were the qwen3.5 thinking-field bug, fixed in the port build.
+- Items drop where Verity's body is, not at the player who asked (6.0.0 too, although its tool says "at the player's
+  feet"). Offered to change it; not changed.

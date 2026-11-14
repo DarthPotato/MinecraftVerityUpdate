@@ -21,8 +21,8 @@ The `neoforge-1.21.1` branch has the 1.21.1 build. `PORTING_LOG.md` records ever
   natively.
 - Voice: fish.audio added (free model and Verity's voice by default, with a speed setting). Host Mode streams the server-made voice to everyone.
 - Config screen edits are saved to disk (NeoForge does not autosave like Forge did).
-- Not included from 6.0.0: the one-click Ollama installer (setup screen, download HUD, keybind). The music discs,
-  which 6.0.0 removed, are still here.
+- The music discs, which 6.0.0 removed, are still here (owner's choice), and four lookups 6.0.0 dropped are back:
+  the player's full inventory, creatures nearby, Verity's own coordinates and ThatMob's old base.
 - A reply that qwen3.5 puts in Ollama's thinking field by mistake is recovered instead of showing "...".
 
 ## Dependencies
@@ -93,3 +93,8 @@ In singleplayer or when you "Open to LAN", your own game is the server, so your 
    must run the same Verity jar as the server.
 
 There is one Verity per world, shared by all players (karma, memory and chat history included).
+
+### Local AI Setup
+
+The AI Settings tab has a "Local AI Setup (Ollama)" button that installs Ollama and downloads models on that PC with
+one click. It is for singleplayer; on a server, set Ollama up on the server PC as above.
