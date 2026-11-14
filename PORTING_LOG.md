@@ -221,3 +221,45 @@ Work happens on branch `stage2-26.3` in a second folder (`C:\dev\MinecraftVerity
   player's game), zipped. Attached to a private GitHub release; `dist/` keeps a local copy (not in git).
 - `README.md` added.
 - Branches: `neoforge-26.3` (default) and `neoforge-1.21.1`. The old `master` and `stage2-26.3` names are gone.
+
+## Owner requests after release (2026-11-14, 26.3 only)
+
+**Owner decisions (2026-11-14)**
+- Hostile event set to `OFF` on the owner's live server for now (config change only, hot-reloaded).
+- Add a "build a house" action that uses Minecraft's own village houses.
+- Bring the demon back. Block breaking: "Everything, like the original".
+- Keep `aiThink` on (slow replies are the thinking time).
+
+**`build_house` action (new, not in 6.0.0)**
+- `HouseBuilder` (`entity/llm/actions`), tool `build_house` in `Tools`. Picks a small, medium or big village house in
+  the style of the player's biome (plains, desert, savanna, snowy, taiga) and places it a few blocks ahead of the
+  player, door side facing them.
+- Refuses instead of wrecking: ground sloping more than 4 blocks, water or lava, or any block entity (chest, furnace...)
+  in the footprint. Grass and snow layers are cleared, dips under the foundation are filled with dirt, chest loot
+  tables are stripped, no villagers spawn. 60-second cooldown.
+- Dev-only `/verity_dev_ask <player> <text>` (not registered in a built jar) sends a chat line to Verity from the
+  console, used to test actions.
+- Tested on a flat dev world: Verity called the tool and the house was built; a second request hit the cooldown.
+
+**Demon restored (GeckoLib 5)**
+- Code and assets moved back from `parked/demon` (now gone) and ported: synced-data builder, `hurtServer`,
+  `ValueInput`/`ValueOutput` saves, step height as the `STEP_HEIGHT` attribute, `PathfindingContext` path types,
+  server-side nearest-player lookups, GeckoLib 5 controllers (the idle delay uses the render state's age).
+- Renderer rewritten. GeckoLib 5 parses Bedrock `poly_mesh` but never draws it, and most of the demon's body is
+  poly_mesh. `BedrockPolyMesh` still bakes it from `meshes/entity/verity_demon.json`; the renderer submits each bone's
+  mesh as a per-bone render task, in the same model space as that bone's cubes. Head-look is a bone updater. Death
+  tilt is disabled via `getDeathMaxRotation` (the 1.20.1 renderer hid `deathTime` for the same effect).
+- `hostileEvent = DEMON` spawns the demon 16 to 32 blocks from the player, staring at them, as in 6.0.0. The forced
+  midnight that came with it stays cut. Its death or removal ends the event exactly like the Wither stand-in.
+  `transform_to_normal` and the no-sleeping check work through `activeDemon` as before.
+- `canCrash` (kick a player the demon kills, "Farewell, <name>") is back as a setting, **default off** (the original
+  defaulted to on). The kick runs one tick after death.
+- Verified on the dev server and client: `/summon verity:verity_demon` renders the full body (15 poly_mesh bones
+  loaded) with no errors; with `hostileEvent = DEMON` at day 5 the demon spawned, the "face goes blank" message arrived,
+  and killing it gave "The darkness... it's gone." No Verity errors in either log.
+
+**Not verified / TODO**
+- A survival chase with block breaking, the chase music and jumpscare on a PC with audio, and the demon in
+  multiplayer. The live server still runs the earlier jar and has `hostileEvent = OFF`.
+- The demon and `build_house` exist only on 26.3; 1.21.1 still has the Wither stand-in.
+- trueDarkness on 26.3 is still parked (`parked/truedarkness`).

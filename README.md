@@ -12,9 +12,11 @@ The `neoforge-1.21.1` branch has the 1.21.1 build. `PORTING_LOG.md` records ever
 
 - Cut, at the owner's request: intro video, villager and wildlife killing, the mass kill at half the day count, the
   frozen daylight cycle, forced midnight, forced brightness 0.
-- Parked for later (code kept in `parked/`, not built): the demon form, and on 26.3 the True Darkness lighting effect.
-- The hostile event at the day count is a setting: `MESSAGE` (default), `WITHER`, `DEMON` (acts like Wither for now) or
-  `OFF` (which also turns off the day-based personality shift).
+- Parked for later (code kept in `parked/`, not built): the True Darkness lighting effect.
+- The hostile event at the day count is a setting: `MESSAGE` (default), `WITHER`, `DEMON` (Verity's demon form, as in
+  the original, minus the forced midnight) or `OFF` (which also turns off the day-based personality shift).
+- `canCrash` (kick a player the demon kills) defaults to off.
+- New action: Verity can build a vanilla village house in front of the player (`build_house`).
 - AI: any OpenAI-compatible endpoint, key and model, instead of a fixed provider list. Ollama is detected and used
   natively.
 - Voice: fish.audio added (free model and Verity's voice by default, with a speed setting). Host Mode streams the server-made voice to everyone.
