@@ -158,13 +158,48 @@ public class Tools {
       });
    }
 
-   @Tool("Drop items at the player's feet. Use whenever the player asks you to give, drop or get them an item.")
+   @Tool("Give items to the player; they go straight into the player's inventory. Use whenever the player asks you to give, drop or get them an item.")
    String give_item(
       @P(name = "item_id", description = "Minecraft item id, for example minecraft:torch, minecraft:bread, minecraft:iron_pickaxe") String item_id,
       @P(name = "count", description = "How many, 1 to 64. Use 1 unless the player says a number", defaultValue = "1") int count
    ) {
       int amount = Mth.clamp(count, 1, 64);
       return this.serverCall(() -> LLMUtility.drop_item(this.player, item_id, amount));
+   }
+
+   @Tool(
+      "Kill mobs within 24 blocks of the player. Leave mob_type empty to kill every hostile monster, or give one kind (for example minecraft:zombie or minecraft:cow) to kill only those. Villagers, tamed pets, named mobs, bosses and your demon form are never killed. Use for: kill the zombies, clear out the mobs, get rid of that creeper."
+   )
+   String kill_mobs(
+      @P(name = "mob_type", description = "Mob id to kill, for example minecraft:creeper. Empty for every hostile monster", required = false) String mob_type
+   ) {
+      return this.serverCall(() -> this.player == null ? "No player found." : VerityPowers.killMobs(this.player, mob_type));
+   }
+
+   @Tool(
+      "Enchant the item in the player's main hand, following enchanting table rules: the enchantment has to suit the item and the level is capped at its maximum. Use for: enchant my sword, put efficiency on my pickaxe."
+   )
+   String enchant_held_item(
+      @P(name = "enchantment", description = "Enchantment id, for example minecraft:sharpness, minecraft:efficiency, minecraft:protection") String enchantment,
+      @P(name = "level", description = "Enchantment level. Use the highest unless the player says a number", required = false) Integer level
+   ) {
+      int wanted = level == null ? 10 : level;
+      return this.serverCall(() -> this.player == null ? "No player found." : VerityPowers.enchantHeldItem(this.player, enchantment, wanted));
+   }
+
+   @Tool(
+      "Give the player a helpful potion effect, for example minecraft:haste, minecraft:speed, minecraft:night_vision, minecraft:regeneration, minecraft:fire_resistance. Set everyone_nearby to true when they want it for others too (every player within 16 blocks). Only helpful effects work."
+   )
+   String give_effect(
+      @P(name = "effect", description = "Effect id, for example minecraft:haste") String effect,
+      @P(name = "seconds", description = "How long, 10 to 600 seconds. 120 unless the player says otherwise", required = false) Integer seconds,
+      @P(name = "level", description = "Effect level 1 to 3. 1 unless the player asks for stronger", required = false) Integer level,
+      @P(name = "everyone_nearby", description = "true to give it to every player within 16 blocks as well", required = false) Boolean everyone_nearby
+   ) {
+      int secs = seconds == null ? 120 : seconds;
+      int lvl = level == null ? 1 : level;
+      boolean everyone = Boolean.TRUE.equals(everyone_nearby);
+      return this.serverCall(() -> this.player == null ? "No player found." : VerityPowers.giveEffect(this.player, effect, secs, lvl, everyone));
    }
 
    @Tool("Find the nearest ore block within 32 blocks of the player and return its coordinates.")

@@ -73,6 +73,10 @@ public class AiAPI {
    private static final Pattern LEADING_TAG = Pattern.compile("^\\[([a-z0-9_ ]{1,24})\\]\\s*", Pattern.CASE_INSENSITIVE);
    private static final Pattern TAGGED_LINE = Pattern.compile("^\\[[a-z0-9_ ]{1,24}\\]", Pattern.CASE_INSENSITIVE | Pattern.MULTILINE);
    private static final Pattern ACTION_TAG = Pattern.compile("^\\s*\\[([a-z_]{3,40})\\]\\s*", Pattern.CASE_INSENSITIVE);
+   private static final Pattern KARMA_TAG = Pattern.compile(
+      "\\[\\s*(?:(increase|raise|decrease|lower)[ _]karma|karma(?:\\s*[:_-]?\\s*(increased|increase|up|raise|decreased|decrease|down|lower|\\+\\s*\\d+|-\\s*\\d+))?)\\s*\\]",
+      Pattern.CASE_INSENSITIVE
+   );
    private static volatile Set<String> toolNames;
    private static final Pattern SOUND_TAG = Pattern.compile("\\[sound:\\s*([a-z0-9_.:/-]+)\\s*\\]", 2);
    private static final Pattern THINK_BLOCK = Pattern.compile("(?is)<think>.*?(</think>|$)");
@@ -203,9 +207,10 @@ public class AiAPI {
          String finalPrompt = "[" + time + "] " + prompt;
          String answer = null;
          boolean actionsRan = false;
+         boolean karmaToolRan = false;
          try {
             Result<String> result = assistant.chat(finalPrompt);
-            logActions(result, player);
+            karmaToolRan |= logActions(result, player);
             actionsRan = !result.toolExecutions().isEmpty();
             answer = result.content();
             if (answer == null || answer.isBlank()) {
@@ -231,7 +236,7 @@ public class AiAPI {
             answer = null;
             try {
                Result<String> again = assistant.chat(nudge);
-               logActions(again, player);
+               karmaToolRan |= logActions(again, player);
                answer = again.content();
                if (answer == null || answer.isBlank()) {
                   answer = leakedReply(again);
@@ -253,7 +258,7 @@ public class AiAPI {
                String nudge = "[" + time + "] <System> Your last reply was cut off. Answer the player's last message now, in one or two short sentences.";
                try {
                   Result<String> second = quick.chat(nudge);
-                  logActions(second, player);
+                  karmaToolRan |= logActions(second, player);
                   answer = second.content();
                   if (answer == null || answer.isBlank()) {
                      answer = leakedReply(second);
@@ -265,6 +270,20 @@ public class AiAPI {
                answer = withoutActionTag(answer);
             } catch (Exception e) {
                Verity.LOGGER.warn("[Verity AI] Second try failed: {}", e.toString());
+            }
+         }
+
+         int karmaTag = karmaTagDirection(answer);
+         if (answer != null && KARMA_TAG.matcher(answer).find()) {
+            // Port fix: qwen3.5 sometimes writes "[karma increase]" instead of calling the karma tool. The tag is never shown,
+            // and its direction counts as one karma step for the player when no karma tool ran this turn.
+            answer = withoutKarmaTags(answer);
+            if (karmaTag != 0 && !karmaToolRan && player != null && level != null) {
+               ServerPlayer target = player;
+               ServerLevel karmaLevel = level;
+               float step = karmaTag;
+               Verity.LOGGER.info("[Verity AI] Wrote a karma tag instead of using the karma tool; karma {} for {}", karmaTag > 0 ? "+1" : "-1", player.getName().getString());
+               level.getServer().execute(() -> Karma.add(karmaLevel, target, step));
             }
          }
 
@@ -376,8 +395,11 @@ public class AiAPI {
    }
 
    /** Port: every action Verity takes goes to the server log, so problems can be traced without dev mode. */
-   private static void logActions(Result<String> result, ServerPlayer player) {
+   private static boolean logActions(Result<String> result, ServerPlayer player) {
+      boolean karmaChanged = false;
       for (ToolExecution te : result.toolExecutions()) {
+         String tool = te.request().name();
+         karmaChanged |= tool.equals("increase_karma") || tool.equals("decrease_karma") || tool.equals("change_karma");
          String outcome = te.result() == null ? "" : te.result().replace('\n', ' ');
          Verity.LOGGER.info(
             "[Verity AI] {} -> {}({}) = {}",
@@ -387,6 +409,35 @@ public class AiAPI {
             outcome.length() > 160 ? outcome.substring(0, 160) + "..." : outcome
          );
       }
+
+      return karmaChanged;
+   }
+
+   /** +1 or -1 for the karma tags in a reply ("[karma increase]", "[karma -1]"), 0 for none or a bare "[karma]". */
+   private static int karmaTagDirection(String reply) {
+      if (reply == null) {
+         return 0;
+      }
+
+      int sum = 0;
+      Matcher m = KARMA_TAG.matcher(reply);
+      while (m.find()) {
+         String verb = m.group(1) != null ? m.group(1) : m.group(2);
+         if (verb != null) {
+            verb = verb.toLowerCase(Locale.ROOT).replace(" ", "");
+            if (verb.startsWith("inc") || verb.startsWith("rai") || verb.equals("up") || verb.startsWith("+")) {
+               sum++;
+            } else if (verb.startsWith("dec") || verb.startsWith("low") || verb.equals("down") || verb.startsWith("-")) {
+               sum--;
+            }
+         }
+      }
+
+      return Integer.signum(sum);
+   }
+
+   private static String withoutKarmaTags(String reply) {
+      return reply == null ? null : KARMA_TAG.matcher(reply).replaceAll("").replaceAll(" {2,}", " ").trim();
    }
 
    private static long pruneToolHistory(MinecraftChatMemoryStore store) {
@@ -402,7 +453,7 @@ public class AiAPI {
                // 6.0.0 drops action calls and keeps only their text. Port: fake "[give_item]" tags are removed too, and
                // a turn left with no text (a reply that went into the thinking) is dropped, so the model does not learn
                // either habit from its own history. Thinking is kept out of the saved history.
-               String text = withoutActionTag(ai.text());
+               String text = withoutKarmaTags(withoutActionTag(ai.text()));
                if (text == null || text.isBlank()) {
                   changed = true;
                   continue;
@@ -491,7 +542,7 @@ public class AiAPI {
          return;
       }
 
-      if (last.text() == null || last.text().isBlank() || actionTag(last.text()) != null) {
+      if (last.text() == null || last.text().isBlank() || actionTag(last.text()) != null || KARMA_TAG.matcher(last.text()).find()) {
          messages.set(messages.size() - 1, AiMessage.from(answer));
          store.updateMessages(GLOBAL_MEMORY_ID, messages);
       }
