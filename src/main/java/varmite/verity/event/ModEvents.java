@@ -302,7 +302,11 @@ public class ModEvents {
 
    @SubscribeEvent
    public static void onDespawn(ItemExpireEvent event) {
-      if (event.getEntity().getItem().is(ModItems.VERITY_ITEM.get()) && event.getEntity().level() instanceof ServerLevel serverLevel) {
+      // Port fix: /give drops a display-only copy (never pickable, gone next tick) that also "expires"; it is skipped,
+      // or every /give of Verity handed out a second one. A real item lying for 5 minutes can always be picked up.
+      if (event.getEntity().getItem().is(ModItems.VERITY_ITEM.get())
+         && !event.getEntity().hasPickUpDelay()
+         && event.getEntity().level() instanceof ServerLevel serverLevel) {
          Player p = serverLevel.getNearestPlayer(event.getEntity(), 256.0);
          if (p != null) {
             VerityState.giveOrDrop(p, new ItemStack(ModItems.VERITY_ITEM.get()));
