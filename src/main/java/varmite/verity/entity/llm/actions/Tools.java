@@ -280,7 +280,7 @@ public class Tools {
       return this.serverCall(() -> LLMUtility.findOldBase(this.player));
    }
 
-   @Tool("Put your body back into the player's inventory. Use when they tell you to get back in their inventory or pocket.")
+   @Tool("Teleport to the player by jumping into their inventory. Use for: teleport to me, get in my inventory, get in my pocket.")
    String teleport_to_player() {
       return this.serverCall(() -> {
          if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved()) {
@@ -299,11 +299,17 @@ public class Tools {
       });
    }
 
-   @Tool("Make your body follow the player. Use for: follow me, come here, come with me.")
+   @Tool("Follow the player who asked and come to them; if you are far away you hop over next to them. Use for: follow me, come here, come over, come with me.")
    String start_following() {
       return this.serverCall(() -> {
+         // Port (owner request): follow whoever asked, not only the player who placed you.
+         VerityEntity body = VerityState.verityEntity;
+         if (body != null && !body.isRemoved() && this.player != null) {
+            body.setOwnerUUID(this.player.getUUID());
+         }
+
          VerityState.followPlayer = true;
-         return "Following player.";
+         return this.player == null ? "Following." : "Following " + this.player.getName().getString() + ".";
       });
    }
 

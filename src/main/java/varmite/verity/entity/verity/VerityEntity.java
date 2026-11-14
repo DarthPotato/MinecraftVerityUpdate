@@ -54,6 +54,8 @@ import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.level.block.DoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap.Types;
+import net.minecraft.world.level.pathfinder.PathType;
+import net.minecraft.world.level.pathfinder.WalkNodeEvaluator;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 import varmite.verity.VerityConfig;
@@ -722,6 +724,27 @@ public class VerityEntity extends PathfinderMob {
    }
 
    static class FollowPlacerGoal extends Goal {
+      /** Port (owner request): like a tamed pet, hop to a free spot next to the player when too far away to walk. */
+      private boolean teleportNear(Player target) {
+         BlockPos base = target.blockPosition();
+
+         for (int attempt = 0; attempt < 10; attempt++) {
+            int xd = this.verity.getRandom().nextIntBetweenInclusive(-3, 3);
+            int zd = this.verity.getRandom().nextIntBetweenInclusive(-3, 3);
+            if (Math.abs(xd) >= 2 || Math.abs(zd) >= 2) {
+               BlockPos pos = base.offset(xd, this.verity.getRandom().nextIntBetweenInclusive(-1, 1), zd);
+               if (WalkNodeEvaluator.getPathTypeStatic(this.verity, pos) == PathType.WALKABLE
+                  && this.verity.level().noCollision(this.verity, this.verity.getBoundingBox().move(Vec3.atLowerCornerOf(pos.subtract(this.verity.blockPosition()))))) {
+                  this.verity.snapTo(pos.getX() + 0.5, pos.getY(), pos.getZ() + 0.5, this.verity.getYRot(), this.verity.getXRot());
+                  this.verity.getNavigation().stop();
+                  return true;
+               }
+            }
+         }
+
+         return false;
+      }
+
       private final VerityEntity verity;
       private Player owner;
       private final double speedModifier;
@@ -780,6 +803,10 @@ public class VerityEntity extends PathfinderMob {
 
       @Override
       public void tick() {
+         if (this.verity.distanceToSqr(this.owner) >= 576.0 && this.teleportNear(this.owner)) {
+            return;
+         }
+
          if (this.doorOpenDelay > 0) {
             this.doorOpenDelay--;
             this.verity.getNavigation().stop();
