@@ -347,4 +347,26 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
   - The day-count hostile event never depended on karma (its check is `karma < 9000`); unchanged. The provoked event is
     started by the AI through `transform_next_day`; unchanged.
   - Prompt: `karma_scale` now says it is the relationship with the player talking.
+- Owner's list (2026-11-14 evening), all server-side:
+  - Thinking capped at 1024 tokens instead of 1536 (owner picked this over keeping the model loaded): the worst case
+    drops from about 30 s to about 20 s; replies that run out still get the quick retry without thinking. Context
+    reserve follows.
+  - Fake karma tags: qwen3.5 wrote "[karma increase]" / "[karma]" into replies instead of calling the karma tools.
+    Those tags are removed from what he says and from the saved history; an increase/decrease tag counts as one karma
+    step for the player when no karma tool ran that turn (`[Verity AI] Wrote a karma tag ...` in the log).
+  - give_item puts items straight into the player's inventory, split into full stacks (a count above the item's stack
+    size used to make one oversized stack); only what does not fit is dropped at the player's feet
+    (`VerityState.giveOrDrop`). Owner's choice; 6.0.0 dropped them at Verity's body.
+  - New actions in `VerityPowers` (one file per branch, the only API differences):
+    - `kill_mobs(mob_type?)`: every hostile monster (`Enemy`) within 24 blocks of the asker, or one kind by id. Never
+      Verity, the demon / active stand-in, villagers and wandering traders (`Npc`), owned animals (`OwnableEntity`
+      with an owner), named mobs, the Ender Dragon or the Wither. At most 50 per call. Plain `kill()`, so loot drops
+      but no player-kill XP.
+    - `enchant_held_item(enchantment, level?)`: main-hand item, `Enchantment.canEnchant` and
+      `EnchantmentHelper.isEnchantmentCompatible` as at an enchanting table, level clamped to the maximum. Defaults to
+      the maximum level.
+    - `give_effect(effect, seconds?, level?, everyone_nearby?)`: `MobEffectCategory.BENEFICIAL` only, 10-600 s
+      (120 by default), level I-III, instant effects applied once; everyone_nearby = all players within 16 blocks.
+    - Prompt: mappings for the three actions; the "saying is not doing" rule lists kill, enchant and buff.
+  - No karma gate on the new actions, like give_item (it reads karma but never used it); his personality decides.
 

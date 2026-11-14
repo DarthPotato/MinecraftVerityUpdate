@@ -35,6 +35,12 @@ The `neoforge-26.3` branch has the 26.3 build. `PORTING_LOG.md` records every ch
   world shared one karma.
 - Verity is never deleted when a player's inventory is full (he lands at their feet), and `/give` no longer hands out
   two of him.
+- New actions (owner's request): `kill_mobs` (every hostile monster, or one kind, within 24 blocks; never villagers,
+  tamed pets, named mobs, bosses or his demon form), `enchant_held_item` (enchanting table rules: the enchantment must
+  suit the item, capped at its maximum level) and `give_effect` (helpful effects only, up to 10 minutes and level III,
+  optionally for every player within 16 blocks).
+- Items Verity gives go straight into the player's inventory (6.0.0 dropped them where his body was); only what does
+  not fit lands at the player's feet.
 
 ## Dependencies
 
