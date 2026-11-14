@@ -48,10 +48,9 @@ public class OllamaUninstallScreen extends Screen {
    }
 
    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-      this.renderBackground(g);
+      super.render(g, mouseX, mouseY, partialTick);
       g.drawCenteredString(this.font, this.title, this.width / 2, 40, 16777215);
       this.message.renderCentered(g, this.width / 2, 60);
-      super.render(g, mouseX, mouseY, partialTick);
    }
 
    public void onClose() {

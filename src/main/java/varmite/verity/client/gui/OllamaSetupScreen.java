@@ -29,7 +29,6 @@ import varmite.verity.ollama.OllamaApi;
 import varmite.verity.ollama.OllamaModels;
 import varmite.verity.ollama.OllamaRuntime;
 import varmite.verity.ollama.OllamaSetupManager;
-import varmite.verity.types.AiProvider;
 
 public class OllamaSetupScreen extends Screen {
    private final Supplier<Screen> back;
@@ -52,7 +51,7 @@ public class OllamaSetupScreen extends Screen {
    }
 
    protected void init() {
-      this.list = new OllamaSetupScreen.ModelList(this.minecraft, this.width, this.height, 72, this.height - 34, 26);
+      this.list = new OllamaSetupScreen.ModelList(this.minecraft, this.width, this.height - 34 - 72, 72, 26);
       this.addWidget(this.list);
       int gap = 4;
       int bw = Math.min(100, (this.width - 20 - gap * 4) / 5);
@@ -252,7 +251,7 @@ public class OllamaSetupScreen extends Screen {
    }
 
    private static boolean isCurrent(String tag) {
-      return VerityConfig.AI_PROVIDER.get() == AiProvider.OLLAMA
+      return OllamaSetupManager.verityUsesOllama()
          && OllamaModels.withTag((String)VerityConfig.AI_MODEL.get()).equalsIgnoreCase(OllamaModels.withTag(tag));
    }
 
@@ -296,7 +295,8 @@ public class OllamaSetupScreen extends Screen {
 
    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
       this.updateButtons();
-      this.renderBackground(g);
+      // 1.20.2+: the base render draws the background (once per frame) and the buttons.
+      super.render(g, mouseX, mouseY, partialTick);
       this.list.render(g, mouseX, mouseY, partialTick);
       g.drawCenteredString(this.font, this.title, this.width / 2, 8, 16777215);
       g.drawCenteredString(this.font, this.statusLine(), this.width / 2, 20, 16777215);
@@ -313,8 +313,6 @@ public class OllamaSetupScreen extends Screen {
             g.fill(x, 66, x + Math.round(w * f), 69, color);
          }
       }
-
-      super.render(g, mouseX, mouseY, partialTick);
    }
 
    private Component statusLine() {
@@ -334,11 +332,10 @@ public class OllamaSetupScreen extends Screen {
          line = Component.literal("Ollama is not installed").withStyle(ChatFormatting.RED);
       }
 
-      AiProvider provider = (AiProvider)VerityConfig.AI_PROVIDER.get();
       String model = (String)VerityConfig.AI_MODEL.get();
       line.append(Component.literal("   Verity uses: ").withStyle(ChatFormatting.GRAY));
-      if (provider != AiProvider.OLLAMA) {
-         line.append(Component.literal(provider.name() + " (press Use to switch to a local model)").withStyle(ChatFormatting.WHITE));
+      if (!OllamaSetupManager.verityUsesOllama()) {
+         line.append(Component.literal(VerityConfig.AI_ENDPOINT.get() + " (press Use to switch to a local model)").withStyle(ChatFormatting.WHITE));
       } else {
          line.append(Component.literal(model != null && !model.isBlank() ? model : "automatic").withStyle(ChatFormatting.WHITE));
       }
@@ -393,8 +390,8 @@ public class OllamaSetupScreen extends Screen {
    }
 
    private static final class ModelList extends ContainerObjectSelectionList<OllamaSetupScreen.Row> {
-      ModelList(Minecraft mc, int width, int height, int top, int bottom, int itemHeight) {
-         super(mc, width, height, top, bottom, itemHeight);
+      ModelList(Minecraft mc, int width, int height, int top, int itemHeight) {
+         super(mc, width, height, top, itemHeight);
       }
 
       void clear() {

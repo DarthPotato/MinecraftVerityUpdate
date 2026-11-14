@@ -55,6 +55,7 @@ import varmite.verity.event.WorldSpawnData;
 import varmite.verity.ollama.OllamaApi;
 import varmite.verity.ollama.OllamaContext;
 import varmite.verity.ollama.OllamaModels;
+import varmite.verity.ollama.OllamaRuntime;
 import varmite.verity.triggers.ModTriggers;
 
 public class AiAPI {
@@ -139,6 +140,7 @@ public class AiAPI {
       String model = orDefault(VerityConfig.AI_MODEL.get(), VerityConfig.DEFAULT_AI_MODEL);
       CompletableFuture.runAsync(() -> {
          try {
+            startLocalOllama(endpoint);
             if (LLMBuilder.isOllama(endpoint)) {
                OllamaApi.warmUp(OllamaApi.normalize(LLMBuilder.serverRoot(endpoint)), model, OllamaContext.current(model), "30m");
                Verity.LOGGER.info("[Verity AI] Loaded Ollama model {}", model);
@@ -171,6 +173,7 @@ public class AiAPI {
             .setEndpoint(endpoint)
             .setThinking(VerityConfig.AI_THINK.get());
          boolean useTools = true;
+         startLocalOllama(endpoint);
          if (LLMBuilder.isOllama(endpoint)) {
             // 6.0.0: think only on models that can, offer tools only to models that support them, and size the context to the prompt.
             Set<String> caps = OllamaModels.capabilities(OllamaApi.normalize(LLMBuilder.serverRoot(endpoint)), modelName);
@@ -422,6 +425,14 @@ public class AiAPI {
       }
 
       return text;
+   }
+
+   /** 6.0.0: an Ollama installed on this computer (for example by Local AI Setup) is started when Verity needs it. */
+   private static void startLocalOllama(String endpoint) {
+      String root = OllamaApi.normalize(LLMBuilder.serverRoot(endpoint));
+      if (OllamaRuntime.isLocalEndpoint(root) && !OllamaRuntime.isRunning(root) && OllamaRuntime.findExecutable().isPresent()) {
+         OllamaRuntime.ensureRunning(root, Duration.ofSeconds(40L));
+      }
    }
 
    private static String orDefault(String configured, String fallback) {

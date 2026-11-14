@@ -13,7 +13,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import varmite.verity.Verity;
 import varmite.verity.VerityConfig;
-import varmite.verity.types.AiProvider;
 
 public final class OllamaSetupManager {
    private static final OllamaSetupManager.Snapshot IDLE = new OllamaSetupManager.Snapshot(OllamaSetupManager.Phase.IDLE, "", "", 0L, 0L, 0.0, 0, 0L);
@@ -59,10 +58,31 @@ public final class OllamaSetupManager {
       CANCEL.set(true);
    }
 
+   /** The Ollama server behind Verity's AI endpoint setting (without "/v1"). */
    public static String endpoint() {
-      return OllamaApi.normalize(
-         (String)Optional.ofNullable((String)VerityConfig.AI_ENDPOINT.get()).filter(s -> !s.isBlank()).orElse(AiProvider.OLLAMA.getDefaultUrl())
-      );
+      return OllamaApi.normalize(serverRoot(configuredEndpoint()));
+   }
+
+   private static String configuredEndpoint() {
+      String configured = VerityConfig.AI_ENDPOINT.get();
+      return configured == null || configured.isBlank() ? VerityConfig.DEFAULT_AI_ENDPOINT : configured.trim();
+   }
+
+   private static String serverRoot(String endpoint) {
+      String root = endpoint.trim();
+      while (root.endsWith("/")) {
+         root = root.substring(0, root.length() - 1);
+      }
+
+      return root.endsWith("/v1") ? root.substring(0, root.length() - 3) : root;
+   }
+
+   /**
+    * Port: 6.0.0 asks whether the provider is OLLAMA; the port has one free-form endpoint, so this guesses from the URL
+    * (this computer, or Ollama's port 11434) without a network request, because the setup screen asks every frame.
+    */
+   public static boolean verityUsesOllama() {
+      return OllamaRuntime.isLocalEndpoint(endpoint()) || endpoint().contains(":11434");
    }
 
    public static void installOllama() {
@@ -142,7 +162,7 @@ public final class OllamaSetupManager {
       OllamaApi.delete(url, tag);
       mainThread.accept(
          () -> {
-            if (VerityConfig.AI_PROVIDER.get() == AiProvider.OLLAMA
+            if (verityUsesOllama()
                && OllamaModels.withTag((String)VerityConfig.AI_MODEL.get()).equalsIgnoreCase(OllamaModels.withTag(tag))) {
                VerityConfig.AI_MODEL.set("");
                VerityConfig.SPEC.save();
@@ -151,8 +171,12 @@ public final class OllamaSetupManager {
       );
    }
 
+   /** Points Verity at this Ollama model; a cloud endpoint is switched to the Ollama on this computer. */
    public static void selectModel(String tag) {
-      VerityConfig.AI_PROVIDER.set(AiProvider.OLLAMA);
+      if (!verityUsesOllama()) {
+         VerityConfig.AI_ENDPOINT.set(VerityConfig.DEFAULT_AI_ENDPOINT);
+      }
+
       VerityConfig.AI_MODEL.set(tag);
       VerityConfig.SPEC.save();
    }

@@ -11,6 +11,7 @@
   "key.verity.push_to_talk": "Talk to Verity (Push to talk)",
   "category.verity.keys": "Verity Mod",
   "key.verity.cycle_mic": "Cycle Selected Mic",
+  "key.verity.toggle_ollama_progress": "Show/Hide Ollama Download Progress",
 
   "entity.verity.box": "Box",
   "entity.verity.verity": "Verity™",

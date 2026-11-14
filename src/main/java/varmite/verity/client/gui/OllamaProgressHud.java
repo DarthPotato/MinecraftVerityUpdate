@@ -10,30 +10,30 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.ScreenEvent.Render.Post;
-import net.minecraftforge.client.gui.overlay.IGuiOverlay;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
-import net.minecraftforge.fml.common.Mod.EventBusSubscriber.Bus;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.ScreenEvent;
+import net.minecraft.client.gui.LayeredDraw;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import varmite.verity.client.KeybindRegistry;
 import varmite.verity.ollama.OllamaSetupManager;
 
-@EventBusSubscriber(modid = "verity", value = Dist.CLIENT, bus = Bus.FORGE)
+@EventBusSubscriber(modid = "verity", value = Dist.CLIENT)
 public final class OllamaProgressHud {
    private static final int MIN_WIDTH = 200;
    private static final int PAD = 5;
    private static final long SHOW_DONE_MS = 8000L;
    private static final long SHOW_FAILED_MS = 30000L;
    private static boolean visible = true;
-   public static final IGuiOverlay HUD = (gui, graphics, partialTick, width, height) -> {
+   public static final LayeredDraw.Layer HUD = (graphics, deltaTracker) -> {
       Minecraft mc = Minecraft.getInstance();
+      int width = graphics.guiWidth();
       if (!mc.options.hideGui && mc.screen == null) {
          OllamaSetupManager.Snapshot s = OllamaSetupManager.snapshot();
          if (visible && shouldShow(s)) {
             int w = panelWidth(mc.font, s, width);
-            int y = mc.options.renderDebug ? 40 : 6;
-            int x = mc.options.renderDebug ? (width - w) / 2 : 6;
+            int y = mc.getDebugOverlay().showDebugScreen() ? 40 : 6;
+            int x = mc.getDebugOverlay().showDebugScreen() ? (width - w) / 2 : 6;
             render(graphics, mc.font, x, y, w, s, true);
          }
       }
@@ -73,7 +73,7 @@ public final class OllamaProgressHud {
    }
 
    @SubscribeEvent
-   public static void onScreenRender(Post event) {
+   public static void onScreenRender(ScreenEvent.Render.Post event) {
       Screen screen = event.getScreen();
       if (!(screen instanceof OllamaSetupScreen)) {
          OllamaSetupManager.Snapshot s = OllamaSetupManager.snapshot();
@@ -86,7 +86,7 @@ public final class OllamaProgressHud {
    }
 
    @SubscribeEvent
-   public static void onScreenKey(net.minecraftforge.client.event.ScreenEvent.KeyPressed.Post event) {
+   public static void onScreenKey(ScreenEvent.KeyPressed.Post event) {
       Screen screen = event.getScreen();
       if (!(screen instanceof ChatScreen) && !(screen instanceof YACLScreen) && !(screen.getFocused() instanceof EditBox)) {
          if (KeybindRegistry.TOGGLE_OLLAMA_PROGRESS.matches(event.getKeyCode(), event.getScanCode())) {
