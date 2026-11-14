@@ -1,14 +1,14 @@
 # Verity JE port: NeoForge 1.21.1
 
-Private, personal-use port of **Verity JE 6.0.0-beta.9** (by VarmiteYT, original concept by ThatMob) from
-Forge 1.20.1. Verity JE is All Rights Reserved: this repository must stay private, and builds are not to be shared
+Private, personal-use port of **Verity JE 6.0.0** (by VarmiteYT, original concept by ThatMob) from
+Forge 1.20.1. It started from 6.0.0-beta.9; the 6.0.0 release was merged in later (see `PORTING_LOG.md`). Verity JE is All Rights Reserved: this repository must stay private, and builds are not to be shared
 publicly.
 
 This branch, `neoforge-1.21.1`, targets **NeoForge 21.1.266 (Minecraft 1.21.1, Java 21)**.
 The `neoforge-26.3` branch has the 26.3 build. `PORTING_LOG.md` records every change, decision and open item;
 `CLAUDE.md` is the porting brief.
 
-## What is different from the original 6.0.0-beta.9
+## What is different from the original 6.0.0
 
 - Cut, at the owner's request: intro video, villager and wildlife killing, the mass kill at half the day count, the
   frozen daylight cycle, forced midnight, forced brightness 0.
@@ -21,6 +21,9 @@ The `neoforge-26.3` branch has the 26.3 build. `PORTING_LOG.md` records every ch
   natively.
 - Voice: fish.audio added (free model and Verity's voice by default, with a speed setting).
 - Config screen edits are saved to disk (NeoForge does not autosave like Forge did).
+- Not included from 6.0.0: the one-click Ollama installer (setup screen, download HUD, keybind). The music discs,
+  which 6.0.0 removed, are still here.
+- A reply that qwen3.5 puts in Ollama's thinking field by mistake is recovered instead of showing "...".
 
 ## Dependencies
 
@@ -40,7 +43,7 @@ Ollama, JDK HTTP client), Jackson 2.22, JTokkit 1.1.0, Apache OpenNLP 2.5.9, JSp
 gradlew build
 ```
 
-The jar is `build/libs/verity-6.0.0-beta.9-neoforge-1.21.1.jar`. `gradlew runClient` and `gradlew runServer` start dev instances in `run/`
+The jar is `build/libs/verity-6.0.0-neoforge-1.21.1-port.jar`. `gradlew runClient` and `gradlew runServer` start dev instances in `run/`
 (`-PjoinServer=host:port` and `-PplayerName=Name` help with multiplayer tests).
 
 ## Installing
