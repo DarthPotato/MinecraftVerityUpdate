@@ -19,6 +19,7 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -186,8 +187,18 @@ public class LLMUtility {
       double y = bodyOut ? VerityState.verityEntity.getY() : player.getY();
       double z = bodyOut ? VerityState.verityEntity.getZ() : player.getZ();
       ItemStack dropStack = new ItemStack(foundItem, count);
-      ItemEntity droppedItem = new ItemEntity(player.level(), x, y, z, dropStack);
+      ItemEntity droppedItem;
+      if (bodyOut) {
+         droppedItem = new ItemEntity(player.level(), x, y, z, dropStack);
+      } else {
+         // Port: Verity is being carried. Dropped at the player's feet, the item went straight into their inventory
+         // unseen, so it pops out in front of them and can be seen for a second before it is picked up.
+         Vec3 look = player.getLookAngle();
+         droppedItem = new ItemEntity(player.level(), x + look.x * 1.5, player.getEyeY() - 0.4, z + look.z * 1.5, dropStack);
+         droppedItem.setPickUpDelay(20);
+      }
+
       player.level().addFreshEntity(droppedItem);
-      return "Dropped " + count + "x " + dropStack.getHoverName().getString() + " at the player's feet.";
+      return "Dropped " + count + "x " + dropStack.getHoverName().getString() + (bodyOut ? " where your body is." : " in front of the player.");
    }
 }

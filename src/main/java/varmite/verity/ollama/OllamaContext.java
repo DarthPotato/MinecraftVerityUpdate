@@ -12,9 +12,9 @@ public final class OllamaContext {
    }
 
    public static int contextFor(String model, long promptChars, boolean thinking) {
-      // Port fix: 6.0.0 reserved 1536 tokens while LLMBuilder lets a thinking reply use 3072, so long thoughts ran out of
-      // context and were cut off. Reserve the full reply budget plus some slack for the estimate.
-      long needed = (long)(promptChars / 3.5) + (thinking ? 3072 + 512 : 1024 + 256);
+      // Port fix: reserve the whole reply budget LLMBuilder allows (numPredict), plus slack for the estimate, so a long
+      // reply is never cut off by the context window.
+      long needed = (long)(promptChars / 3.5) + (thinking ? 1536 + 512 : 1024 + 256);
       int size = SIZES[SIZES.length - 1];
 
       for (int candidate : SIZES) {

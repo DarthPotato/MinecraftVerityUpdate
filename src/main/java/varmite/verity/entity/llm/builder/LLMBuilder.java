@@ -80,7 +80,9 @@ public class LLMBuilder {
             ollama.numCtx(this.contextSize);
          }
 
-         ollama.numPredict(Boolean.TRUE.equals(this.ollamaThink) ? 3072 : 1024);
+         // Port: 6.0.0 allowed 3072 tokens with thinking; qwen3.5 sometimes thinks to the cap (38 s on the owner's GPU) and never
+         // answers. 1536 still leaves room for its normal 100-800 tokens; AiAPI asks again without thinking if it runs out.
+         ollama.numPredict(Boolean.TRUE.equals(this.ollamaThink) ? 1536 : 1024);
          ollama.defaultRequestParameters(OllamaChatRequestParameters.builder().keepAlive(1800).build());
          ollama.timeout(REQUEST_TIMEOUT);
          ollama.logResponses(VerityConfig.DEV_MODE.get());
