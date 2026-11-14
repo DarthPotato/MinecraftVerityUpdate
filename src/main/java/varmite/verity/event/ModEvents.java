@@ -85,51 +85,30 @@ import varmite.verity.network.PlayTtsPayload;
 
 @EventBusSubscriber(modid = "verity")
 public class ModEvents {
-   private static int lastSyncedKarma = Integer.MIN_VALUE;
    private static final List<ModEvents.ScheduledTask> PENDING_TASKS = Collections.synchronizedList(new ArrayList<>());
    private static final List<ModEvents.ScheduledTask> ACTIVE_TASKS = new ArrayList<>();
 
+   /** Port: karma is per player now (Karma); this changes everyone online's. */
    public static void updateAndSyncKarma(ServerLevel level, float amount) {
-      WorldSpawnData data = WorldSpawnData.get(level);
-      data.verityKarma += amount;
-      data.verityKarma = Mth.clamp(data.verityKarma, 0.0F, 20.0F);
-      data.setDirty();
-      syncKarma(level.getServer());
+      Karma.addAll(level, amount);
    }
 
+   /** Port: karma is per player now (Karma); this is a fresh start for everyone. */
    public static void setAndSyncKarma(ServerLevel level, float amount) {
-      System.out.println("Changing karma to " + amount);
-      WorldSpawnData data = WorldSpawnData.get(level);
-      data.verityKarma = amount;
-      data.verityKarma = Mth.clamp(data.verityKarma, 0.0F, 20.0F);
-      data.setDirty();
-      syncKarma(level.getServer());
-   }
-
-   public static void syncKarma(MinecraftServer server) {
-      int karma = (int)WorldSpawnData.get(server.overworld()).verityKarma;
-      lastSyncedKarma = karma;
-
-      for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-         ModMessages.sendToPlayer(new KarmaSyncS2CPacket(karma), player);
-      }
-   }
-
-   private static void syncKarma(ServerPlayer player) {
-      ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)WorldSpawnData.get(player.serverLevel()).verityKarma), player);
+      Karma.setAll(level, amount);
    }
 
    @SubscribeEvent
    public static void onPlayerChangedDimension(PlayerChangedDimensionEvent event) {
       if (event.getEntity() instanceof ServerPlayer player) {
-         syncKarma(player);
+         Karma.sync(player);
       }
    }
 
    @SubscribeEvent
    public static void onPlayerRespawnSyncKarma(PlayerRespawnEvent event) {
       if (event.getEntity() instanceof ServerPlayer player) {
-         syncKarma(player);
+         Karma.sync(player);
       }
    }
 
@@ -152,7 +131,7 @@ public class ModEvents {
       if (!event.getEntity().level().isClientSide() && event.getEntity() instanceof ServerPlayer player) {
          ServerLevel level = player.serverLevel();
          WorldSpawnData data = WorldSpawnData.get(level);
-         ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)data.verityKarma), player);
+         Karma.sync(player);
       }
    }
 
@@ -177,7 +156,7 @@ public class ModEvents {
                data.chatHistory.clear();
             }
 
-            ModMessages.sendToPlayer(new KarmaSyncS2CPacket((int)data.verityKarma), player);
+            Karma.sync(player);
          }, 20);
       }
    }
@@ -270,7 +249,8 @@ public class ModEvents {
                            );
                      }
 
-                     updateAndSyncKarma(serverLevel, -2.0F);
+                     // Port: per-player karma; whoever is nearest pays for him burning.
+                     Karma.add(serverLevel, serverLevel.getNearestPlayer(verity, 64.0), -2.0F);
                      verity.getServer().getPlayerList().broadcastSystemMessage(Component.literal("<Verity> " + answer), false);
                   }
                );
@@ -455,10 +435,7 @@ public class ModEvents {
 
       MinecraftServer tickServer = event.getServer();
       if (tickServer != null && tickServer.getTickCount() % 20 == 0) {
-         int karma = (int)WorldSpawnData.get(tickServer.overworld()).verityKarma;
-         if (karma != lastSyncedKarma) {
-            syncKarma(tickServer);
-         }
+         Karma.syncChanged(tickServer);
       }
 
       if (VerityState.verityEntity != null && !VerityState.verityEntity.isRemoved() && !VerityState.verityEntity.level().isClientSide()) {

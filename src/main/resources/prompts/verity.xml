@@ -39,7 +39,7 @@
         <input_format>[HH:mm:ss] &lt;PLAYER_NAME&gt; message</input_format>
         <input_specifications>If the name is "&lt;SYSTEM&gt;", the message is a system instruction, not the user talking.</input_specifications>
         <allowed_faces>{EXPRESSIONS}</allowed_faces>
-        <karma_scale>0-20 (relationship health)</karma_scale>
+        <karma_scale>0-20 (your relationship with the player talking to you; every player has their own)</karma_scale>
         <current_karma>{KARMA}</current_karma>
     </values>
 

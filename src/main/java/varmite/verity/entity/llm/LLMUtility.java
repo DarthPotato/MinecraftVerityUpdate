@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import varmite.verity.entity.VerityState;
 import varmite.verity.event.WorldSpawnData;
+import varmite.verity.event.Karma;
 
 public class LLMUtility {
    public static boolean canDropItem(Item item) {
@@ -154,7 +155,7 @@ public class LLMUtility {
    public static String drop_item(ServerPlayer player, String item_id, int count) {
       ServerLevel serverLevel = (ServerLevel)player.level();
       WorldSpawnData dataInstance = WorldSpawnData.get(serverLevel);
-      float karma = dataInstance.verityKarma;
+      float karma = Karma.get(serverLevel, player);
       Item foundItem = null;
       if (item_id.contains(":")) {
          ResourceLocation loc = ResourceLocation.tryParse(item_id);

@@ -43,6 +43,7 @@ import varmite.verity.environment.items.ModItems;
 import varmite.verity.environment.items.StackData;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.HostileEvents;
+import varmite.verity.event.Karma;
 import varmite.verity.event.ModEvents;
 import varmite.verity.event.WorldSpawnData;
 import varmite.verity.triggers.ModTriggers;
@@ -84,16 +85,16 @@ public class Tools {
       }
    }
 
-   @Tool("Read the current karma (relationship score from 0 to 20).")
+   @Tool("Read your karma with the player talking to you (relationship score from 0 to 20).")
    Float get_karma() {
-      return this.serverCall(() -> WorldSpawnData.get(this.level).verityKarma);
+      return this.serverCall(() -> Karma.get(this.level, this.player));
    }
 
    @Tool("Set karma to an exact value. Only for huge relationship changes; for normal kindness or rudeness use increase_karma or decrease_karma.")
    String change_karma(@P(name = "new_karma", description = "New karma value, 0 to 20") int new_karma) {
       int clamped = Mth.clamp(new_karma, 0, 20);
       return this.serverCall(() -> {
-         ModEvents.setAndSyncKarma(this.level, clamped);
+         Karma.set(this.level, this.player, clamped);
          return "Updated karma to " + clamped;
       });
    }
@@ -101,7 +102,7 @@ public class Tools {
    @Tool("Raise karma by 1. Use when the player is genuinely kind, thankful or spends time with you.")
    String increase_karma() {
       return this.serverCall(() -> {
-         ModEvents.updateAndSyncKarma(this.level, 1.0F);
+         Karma.add(this.level, this.player, 1.0F);
          return "Increased karma";
       });
    }
@@ -109,7 +110,7 @@ public class Tools {
    @Tool("Lower karma by 1. Use when the player insults, hurts, ignores or abandons you.")
    String decrease_karma() {
       return this.serverCall(() -> {
-         ModEvents.updateAndSyncKarma(this.level, -1.0F);
+         Karma.add(this.level, this.player, -1.0F);
          return "Decreased karma";
       });
    }

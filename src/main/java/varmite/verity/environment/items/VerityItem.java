@@ -23,6 +23,7 @@ import varmite.verity.entity.VerityState;
 import varmite.verity.entity.verity.VerityEntity;
 import varmite.verity.environment.sounds.ModSounds;
 import varmite.verity.event.ModEvents;
+import varmite.verity.event.Karma;
 import varmite.verity.event.WorldSpawnData;
 import varmite.verity.network.PlayTtsPayload;
 
@@ -119,7 +120,7 @@ public class VerityItem extends Item {
                spawnedEntity.setVariant("serious_1");
                spawnedEntity.level().playSound((Player)null, safePos, ModSounds.BONE_0.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
                PacketDistributor.sendToPlayersTrackingEntityAndSelf(spawnedEntity, new PlayTtsPayload(spawnedEntity.getId(), "DO NOT DO THAT!"));
-               serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));
+               serverLevel.getServer().execute(() -> Karma.add(serverLevel, serverLevel.getNearestPlayer(spawnedEntity, 256.0), -1.0F));
                data = WorldSpawnData.get(serverLevel);
                serverLevel.playSound((Player)null, spawnedEntity.blockPosition(), SoundEvents.LAVA_EXTINGUISH, SoundSource.PLAYERS, 1.0F, 0.8F);
                if (VerityConfig.IMMERSIVE_MODE.get()) {
@@ -138,7 +139,7 @@ public class VerityItem extends Item {
             VerityState.giveOrDrop(p, stack);
             p.sendSystemMessage(Component.literal("<Verity> Ayo chat why u let me explode"));
             PacketDistributor.sendToPlayer(p, new PlayTtsPayload(p.getId(), "Ayo chat why u let me explode"));
-            serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));
+            serverLevel.getServer().execute(() -> Karma.add(serverLevel, p, -1.0F));
             data = WorldSpawnData.get(serverLevel);
             serverLevel.playSound((Player)null, p.blockPosition(), SoundEvents.GHAST_SCREAM, SoundSource.PLAYERS, 1.0F, 1.3F);
          }
@@ -149,7 +150,7 @@ public class VerityItem extends Item {
             VerityState.giveOrDrop(p, stack);
             p.sendSystemMessage(Component.literal("<Verity> DON'T DO THAT."));
             PacketDistributor.sendToPlayer(p, new PlayTtsPayload(p.getId(), "DO NOT DO THAT!"));
-            serverLevel.getServer().execute(() -> ModEvents.updateAndSyncKarma(serverLevel, -1.0F));
+            serverLevel.getServer().execute(() -> Karma.add(serverLevel, p, -1.0F));
             data = WorldSpawnData.get(serverLevel);
             serverLevel.playSound((Player)null, p.blockPosition(), ModSounds.BONE_0.get(), SoundSource.PLAYERS, 1.0F, 0.8F);
          } else {
