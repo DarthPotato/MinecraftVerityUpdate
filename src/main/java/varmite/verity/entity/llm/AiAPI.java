@@ -196,18 +196,29 @@ public class AiAPI {
          DateTimeFormatter fmt = DateTimeFormatter.ofPattern("HH:mm:ss");
          String time = LocalDateTime.now().format(fmt);
          String finalPrompt = "[" + time + "] " + prompt;
-         Result<String> result = assistant.chat(finalPrompt);
-         logActions(result, player);
-         String answer = result.content();
-         if (answer == null || answer.isBlank()) {
-            answer = leakedReply(result);
+         String answer = null;
+         try {
+            Result<String> result = assistant.chat(finalPrompt);
+            logActions(result, player);
+            answer = result.content();
+            if (answer == null || answer.isBlank()) {
+               answer = leakedReply(result);
+            }
+         } catch (RuntimeException e) {
+            // Port fix: a runaway thought can end in a tool call Ollama cannot parse (HTTP 500, "EOF"). With thinking on,
+            // that gets the second try below instead of an error in chat.
+            if (!thinkingOn || isCausedBy(e, ConnectException.class)) {
+               throw e;
+            }
+
+            Verity.LOGGER.warn("[Verity AI] Reply failed ({}); asking again without thinking", e.getMessage());
          }
 
          if ((answer == null || answer.isBlank()) && thinkingOn) {
             // Port fix: qwen3.5 sometimes thinks until it runs out of room and never answers. Ask once more without
             // thinking (a second or two) instead of saying "...".
             try {
-               Verity.LOGGER.info("[Verity AI] Thinking ran out without a reply; asking again without thinking");
+               Verity.LOGGER.info("[Verity AI] No reply after thinking; asking again without thinking");
                AiAPI.Assistant quick = assistant(builder.setOllamaThink(false).build(), memory, systemPrompt, useTools ? tools : null);
                Result<String> second = quick.chat(
                   "[" + time + "] <System> Your last reply was cut off. Answer the player's last message now, in one or two short sentences."
