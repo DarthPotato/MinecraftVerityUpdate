@@ -43,6 +43,77 @@ The `neoforge-1.21.1` branch has the 1.21.1 build. `PORTING_LOG.md` records ever
   not fit lands at the player's feet.
 - When a player logs out carrying Verity, he moves to the nearest player still online.
 
+## How Verity works
+
+**A conversation.** When a player talks to Verity (chat, or the push-to-talk key), the server builds a prompt and sends
+it to the AI endpoint:
+- his personality for the current day and the speaker's karma (friendly, distant, nervous near the hostile day);
+- a snapshot of the world: the player's position, dimension and biome, time, weather and light, health, hunger, what
+  they hold and wear, active effects, the block they look at, monsters within 16 blocks, and where his body is;
+- his permanent memories and the last 25 chat lines (shared by everyone on the server).
+
+With `aiThink` on, qwen3.5 reasons first. Thinking plus the reply may use at most 1024 tokens (about 15 seconds on an
+RTX 3080); most replies take 2-6 seconds. He then either answers or calls actions, which the server carries out before
+he replies in chat and out loud.
+
+**Who can talk to him:** anyone near his body, whoever carries him, and players within 16 blocks of the carrier.
+`requireVerity = true` makes him answer only messages that contain his name.
+
+**What he can do** (about 30 actions): give items (straight into your inventory), kill mobs (all hostile ones or one
+kind; never villagers, tamed pets, named mobs, bosses or his demon form), enchant the item in your hand (enchanting
+table rules), give helpful effects (to you or everyone within 16 blocks), knock monsters back, place a torch, build a
+village house, follow / stay / jump into your inventory, find ores, villages, fortresses and ThatMob's old base, look
+at your inventory and the creatures around, play his song, remember and forget facts, and change your karma.
+
+**Keeping a small model honest.** qwen3.5:9b sometimes talks instead of acting. The server catches the common cases:
+a reply left in the thinking field is recovered; when thinking runs out or the reply breaks, he is asked again without
+thinking; a reply that is only an action written as a tag (`[give_item]`) or that claims an action the player clearly
+asked for (kill, an enchantment, an effect, "give me", follow, teleport, light it up) gets one more try that names the
+action; `[karma increase]` tags are hidden and count as one karma step. False claims are kept out of the chat history
+so he does not learn them. Vague requests ("I need some torches") can still be only claimed; a bigger model would do
+better.
+
+**Karma, days and the hostile event.** Every player has their own karma (0-20) and karma bar. Days count up to
+`dayCount`; past the halfway point he gets nervous, and at `dayCount` the `hostileEvent` happens once per world
+(`MESSAGE`, `WITHER`, `DEMON`, or `OFF`). Killing the demon ends it for good and resets everyone's karma to 20.
+
+**The server log** shows every action he takes (`[Verity AI] <player> -> <action>(<arguments>) = <result>`) and every
+retry, so "he didn't do it" reports can be checked.
+
+## Voice and speech
+
+- **Voice (text to speech):** `LOCAL` (on-device voice, default), `FISH_AUDIO` (cloud, Verity's own voice by default,
+  needs a free fish.audio key), plus `GROQ`, `KOKORO`, `CARTESIA` and `NATIVE`. `useTTS = false` mutes him for you.
+- **Host Mode** (server setting, off by default): the server makes each line once, with the server's voice settings
+  and key, and streams the audio to players near Verity. Players then need no voice setup and the key never
+  leaves the server. With Host Mode off, every player's game makes the voice itself with its own settings.
+- **Speech to text** always runs in each player's own game (Controls: "Talk to Verity (Push to talk)", "Cycle Selected
+  Mic"). `sttProvider`:
+  - `NATIVE` (default): Whisper tiny.en on your own PC. Fast and private, but it often mishears.
+  - `GROQ`: Whisper large-v3-turbo on Groq's servers, much more accurate. Needs a free key from console.groq.com in
+    `groqKey`; your voice clips are sent to Groq.
+  - `WHISPER`: your own OpenAI-compatible transcription server (`sttEndpoint`, `sttModel`).
+
+## Default settings
+
+A fresh `config/verity-common.toml`, and what the owner's server uses:
+
+| Setting | Default | Owner's server |
+|---|---|---|
+| `aiEndpoint` | `http://127.0.0.1:11434/v1` | same |
+| `apiKey` / `aiModel` | `ollama` / `qwen3.5:9b` | same |
+| `aiThink` | `true` | `true` |
+| `dayCount` | `5` | `5` |
+| `hostileEvent` | `MESSAGE` | `DEMON` (already happened in the current world) |
+| `canCrash` / `requireVerity` | `false` / `false` | same |
+| `hostMode` | `false` | `true` |
+| `ttsProvider` | `LOCAL` | `FISH_AUDIO` (key set) |
+| `fishVoiceId` / `fishModel` / `fishSpeed` | empty (Verity's voice) / `s2.1-pro-free` / `1.0` | same |
+| `sttProvider` | `NATIVE` | (set per player) |
+
+Ollama on the owner's PC: `OLLAMA_HOST=0.0.0.0`, `OLLAMA_NUM_PARALLEL=2`, keep-alive forever (Verity asks for 30
+minutes, so the model unloads after half an hour without chat and the next reply takes a few seconds longer).
+
 ## Dependencies
 
 | | Version | Where |
