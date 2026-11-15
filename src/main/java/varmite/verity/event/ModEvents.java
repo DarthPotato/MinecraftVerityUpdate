@@ -66,6 +66,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.RightClick
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.PacketDistributor;
+import varmite.verity.Verity;
 import varmite.verity.VerityConfig;
 import varmite.verity.command.ChangeKarmaCommand;
 import varmite.verity.command.DevAskCommand;
@@ -167,6 +168,52 @@ public class ModEvents {
    public static void onPlayerLoggedOut(PlayerLoggedOutEvent event) {
       if (event.getEntity() instanceof ServerPlayer player) {
          VerityMemoryManager.get().addMemory("last_logout_" + player.getStringUUID(), String.valueOf(System.currentTimeMillis()));
+         handVerityOver(player);
+      }
+   }
+
+   /**
+    * Port fix: Verity carried by a player who logs out left the server with them, so everyone else lost him until they
+    * came back. When other players are still online he hops to the nearest one (same dimension first).
+    */
+   private static void handVerityOver(ServerPlayer leaving) {
+      MinecraftServer server = leaving.level().getServer();
+      if (server == null) {
+         return;
+      }
+
+      ServerPlayer target = null;
+      double best = Double.MAX_VALUE;
+      for (ServerPlayer other : server.getPlayerList().getPlayers()) {
+         if (other == leaving) {
+            continue;
+         }
+
+         double d = other.level() == leaving.level() ? other.distanceToSqr(leaving) : Double.MAX_VALUE / 2;
+         if (target == null || d < best) {
+            target = other;
+            best = d;
+         }
+      }
+
+      if (target == null) {
+         return;
+      }
+
+      boolean moved = false;
+      for (int i = 0; i < leaving.getInventory().getContainerSize(); i++) {
+         ItemStack stack = leaving.getInventory().getItem(i);
+         if (!stack.isEmpty() && stack.is(ModItems.VERITY_ITEM.get())) {
+            ItemStack copy = stack.copy();
+            leaving.getInventory().setItem(i, ItemStack.EMPTY);
+            VerityState.giveOrDrop(target, copy);
+            moved = true;
+         }
+      }
+
+      if (moved) {
+         Verity.LOGGER.info("[Verity] {} logged out carrying Verity; handed him to {}", leaving.getName().getString(), target.getName().getString());
+         target.sendSystemMessage(Component.literal("<" + VerityConfig.VERITY_CUSTOM_NAME.get() + "> " + leaving.getName().getString() + " left, so I jumped over to you."));
       }
    }
 

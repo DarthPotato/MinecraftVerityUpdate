@@ -41,6 +41,7 @@ The `neoforge-1.21.1` branch has the 1.21.1 build. `PORTING_LOG.md` records ever
   optionally for every player within 16 blocks).
 - Items Verity gives go straight into the player's inventory (6.0.0 dropped them where his body was); only what does
   not fit lands at the player's feet.
+- When a player logs out carrying Verity, he moves to the nearest player still online.
 
 ## Dependencies
 

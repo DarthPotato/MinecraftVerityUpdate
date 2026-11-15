@@ -489,4 +489,8 @@ and to name the jars plainly as a 6.0.0 port. There is no 6.7: the release is 6.
   kill_mobs (2 zombies, 2 creepers, 2 slimes, a skeleton; the named zombie spared), haste, efficiency, fortune,
   unbreaking and night vision all applied, the last two through the retry; give_item put 3 iron pickaxes in the
   inventory. "I need some torches" was still only claimed ("I need" is left out of the triggers on purpose).
+- Open item closed (owner: "don't try too hard"): Verity carried by a player who logged out left with them. Nothing
+  deleted him; the item was simply in an offline inventory. Now, when other players are still online, he moves to the
+  nearest one (same dimension first; `ModEvents.handVerityOver`, at their feet if their inventory is full) and tells
+  them. Compiled on both branches; not tested with two clients.
 
